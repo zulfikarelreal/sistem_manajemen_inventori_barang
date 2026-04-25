@@ -32,7 +32,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    font-size: 30px;
+    font-size: 20px;
     font-weight: 600;
 }
 
@@ -41,23 +41,57 @@ i {
     cursor: pointer;
 }
 
+/* ===== INFO INVOICE ===== */
+.invoice-info {
+    margin-top: 60px;
+    width: 90%;
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+    box-shadow: 3px 5px 0 0 black;
+    padding: 14px 20px;
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.invoice-info .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.invoice-info .info-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.invoice-info .info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+}
+
 /* ===== NAV CONTROL ===== */
 .nav-controll {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 90%;
-    margin-top: 65px;
+    margin-top: 12px;
     padding: 5px 0;
 }
 
 .nav-controll > p {
     font-style: italic;
-    font-size: 14px;
+    font-size: 13px;
     color: #555;
 }
 
-.inputbarang-btn {
+.tambah-btn {
     padding: 5px 12px;
     font-size: 12px;
     font-weight: 600;
@@ -69,15 +103,16 @@ i {
     transition: transform 0.1s ease;
 }
 
-.inputbarang-btn:hover {
+.tambah-btn:hover {
     transform: scale(0.90);
 }
 
 /* ===== TABLE ===== */
 .container {
     width: 90%;
-    margin-top: 15px;
+    margin-top: 10px;
     overflow-x: auto;
+    margin-bottom: 30px;
 }
 
 table {
@@ -124,19 +159,6 @@ tbody tr:not(.empty-row):hover {
     transition: background-color 0.15s ease;
 }
 
-/* Invoice link style */
-.invoice-link {
-    color: rgb(16, 44, 168);
-    font-weight: 600;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-.invoice-link:hover {
-    color: rgb(50, 90, 220);
-}
-
-/* Tombol hapus baris */
 .btn-hapus {
     padding: 4px 10px;
     font-size: 12px;
@@ -148,10 +170,10 @@ tbody tr:not(.empty-row):hover {
     box-shadow: 2px 3px 0 0 black;
     cursor: pointer;
     transition: transform 0.1s ease;
+    margin: auto;
     display: flex;
     align-items: center;
     gap: 4px;
-    margin: auto;
 }
 
 .btn-hapus:hover {
@@ -261,7 +283,6 @@ tbody tr:not(.empty-row):hover {
     transform: scale(0.95);
 }
 
-/* ===== MODAL KONFIRMASI ===== */
 .modal-confirm {
     text-align: center;
     gap: 12px;
@@ -274,21 +295,4 @@ tbody tr:not(.empty-row):hover {
 .confirm-desc {
     font-size: 13px;
     color: #555;
-}
-
-/* Total otomatis di modal */
-.total-display {
-    padding: 9px 12px;
-    border-radius: 8px;
-    border: 1px solid #aaa;
-    background-color: rgb(240, 244, 255);
-    font-size: 13px;
-    color: #333;
-    text-align: left;
-}
-
-.total-note {
-    font-size: 11px;
-    color: #888;
-    font-style: italic;
 }
