@@ -35,50 +35,48 @@
     </div>
 
     <script>
-    // Akun yang valid (bisa ditambah lebih banyak)
-    const validUsers = [
-        { username: "admin", password: "admin123" },
-        { username: "invenz", password: "invenz2024" }
-    ];
+        const validUsers = [
+            { username: "admin", password: "admin123" },
+            { username: "invenz", password: "invenz2024" }
+        ];
 
-    document.querySelector('form').addEventListener('submit', function(e) {
-        e.preventDefault();
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
 
-        const user = validUsers.find(u => u.username === username && u.password === password);
+            const user = validUsers.find(u => u.username === username && u.password === password);
 
-        if (user) {
-            // Simpan sesi login ke localStorage
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('loggedUser', username);
+            if (user) {
+                localStorage.setItem('isLoggedIn', 'true');
 
-            // Redirect ke dashboard
-            window.location.href = 'dashboard.html';
-        } else {
-            // Tampilkan pesan error
-            showError('Username atau password salah!');
+                // Simpan username dengan huruf kapital di awal
+                const formattedName = username.charAt(0).toUpperCase() + username.slice(1);
+                localStorage.setItem('loggedUser', formattedName);
+
+                window.location.href = 'dashboard.html';
+            } else {
+                showError('Username atau password salah!');
+            }
+        });
+
+        function showError(msg) {
+            const existing = document.querySelector('.error-login');
+            if (existing) existing.remove();
+
+            const err = document.createElement('p');
+            err.className = 'error-login';
+            err.textContent = msg;
+            err.style.cssText = `
+                color: #cc2222;
+                font-size: 13px;
+                text-align: center;
+                margin-top: 10px;
+            `;
+            document.querySelector('.login-box').appendChild(err);
         }
-    });
-
-    function showError(msg) {
-        // Hapus error lama jika ada
-        const existing = document.querySelector('.error-login');
-        if (existing) existing.remove();
-
-        const err = document.createElement('p');
-        err.className = 'error-login';
-        err.textContent = msg;
-        err.style.cssText = `
-            color: #cc2222;
-            font-size: 13px;
-            text-align: center;
-            margin-top: 10px;
-        `;
-        document.querySelector('.login-box').appendChild(err);
-    }
-</script>
+    </script>
 
 </body>
 </html>
