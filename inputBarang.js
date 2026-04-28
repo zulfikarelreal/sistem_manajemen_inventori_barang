@@ -1,3 +1,16 @@
+// ===== GUARD: pastikan loggedUser tidak undefined =====
+// Ambil dari localStorage jika auth.js tidak mendefinisikannya sebagai variabel global
+const loggedUser =
+  (typeof window.loggedUser !== "undefined" && window.loggedUser) ||
+  localStorage.getItem("loggedUser") ||
+  "Admin";
+
+// Kalau belum login sama sekali, redirect ke login
+if (!localStorage.getItem("isLoggedIn")) {
+  window.location.href = "login.html";
+}
+
+// ===== INIT VARIABEL =====
 let rowCount = 0;
 let rowToDelete = null;
 
@@ -14,30 +27,58 @@ const confirmNo = document.getElementById("confirmNo");
 const inputInvoice = document.getElementById("inputInvoice");
 const inputTanggal = document.getElementById("inputTanggal");
 const inputSupplier = document.getElementById("inputSupplier");
-const totalBarang = document.getElementById("totalBarang"); // display only
+const totalBarang = document.getElementById("totalBarang");
 
-// Buka modal
+// Set info user di sidebar
+document.getElementById("sidebarUsername").textContent = loggedUser;
+document.getElementById("sidebarAvatar").textContent = loggedUser
+  .charAt(0)
+  .toUpperCase();
+
+// ===== SIDEBAR =====
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+
+document.getElementById("hamburger").addEventListener("click", () => {
+  sidebar.classList.add("open");
+  overlay.classList.add("active");
+});
+
+document.getElementById("sidebarClose").addEventListener("click", closeSidebar);
+overlay.addEventListener("click", closeSidebar);
+
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  overlay.classList.remove("active");
+}
+
+// ===== LOGOUT =====
+function doLogout() {
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("loggedUser");
+  window.location.href = "login.html";
+}
+document.getElementById("logoutBtn").addEventListener("click", doLogout);
+
+// ===== MODAL INPUT BARANG =====
 openModalBtn.addEventListener("click", () => {
   modalOverlay.classList.add("active");
 });
 
-// Tutup modal
 batalBtn.addEventListener("click", tutupModal);
 modalOverlay.addEventListener("click", (e) => {
   if (e.target === modalOverlay) tutupModal();
 });
 
-// Simpan
 simpanBtn.addEventListener("click", simpanData);
 
-// Konfirmasi hapus
+// ===== MODAL KONFIRMASI HAPUS =====
 confirmYes.addEventListener("click", () => {
   if (rowToDelete) {
     const invoiceId = rowToDelete.dataset.invoiceId;
     rowToDelete.remove();
     updateNomor();
 
-    // Hapus dari localStorage
     const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
     delete invoices[invoiceId];
     localStorage.setItem("invoices", JSON.stringify(invoices));
@@ -59,6 +100,7 @@ confirmOverlay.addEventListener("click", (e) => {
   }
 });
 
+// ===== FUNGSI MODAL =====
 function tutupModal() {
   modalOverlay.classList.remove("active");
   clearForm();
@@ -82,18 +124,15 @@ function simpanData() {
     return;
   }
 
-  // Cek duplikat invoice
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   if (invoices[invoice]) {
     errorMsg.textContent = "Invoice sudah ada!";
     return;
   }
 
-  // Simpan ke localStorage, total = 0 dulu (belum ada barang)
   invoices[invoice] = { invoice, tanggal, supplier, total: 0, items: [] };
   localStorage.setItem("invoices", JSON.stringify(invoices));
 
-  // Hapus baris kosong jika ada
   const emptyRow = tableBody.querySelector(".empty-row");
   if (emptyRow) emptyRow.remove();
 
@@ -102,17 +141,18 @@ function simpanData() {
   tutupModal();
 }
 
+// ===== BUAT BARIS TABEL =====
 function buatBaris(data) {
   const tr = document.createElement("tr");
   tr.dataset.invoiceId = data.invoice;
   tr.innerHTML = `
-        <td>${rowCount}</td>
-        <td><a class="invoice-link" href="invoice.html?id=${encodeURIComponent(data.invoice)}">${data.invoice}</a></td>
-        <td>${data.tanggal}</td>
-        <td>${data.supplier}</td>
-        <td class="col-total">${data.total}</td>
-        <td><button class="btn-hapus"><i class="bx bx-trash"></i> Hapus</button></td>
-    `;
+    <td>${rowCount}</td>
+    <td><a class="invoice-link" href="invoice.html?id=${encodeURIComponent(data.invoice)}">${data.invoice}</a></td>
+    <td>${data.tanggal}</td>
+    <td>${data.supplier}</td>
+    <td class="col-total">${data.total}</td>
+    <td><button class="btn-hapus"><i class="bx bx-trash"></i> Hapus</button></td>
+  `;
 
   tr.querySelector(".btn-hapus").addEventListener("click", () => {
     rowToDelete = tr;
@@ -122,6 +162,7 @@ function buatBaris(data) {
   tableBody.appendChild(tr);
 }
 
+// ===== UPDATE NOMOR URUT =====
 function updateNomor() {
   const rows = tableBody.querySelectorAll("tr:not(.empty-row)");
   if (rows.length === 0) {
@@ -139,7 +180,7 @@ function updateNomor() {
   }
 }
 
-// ===== INIT: render ulang dari localStorage saat halaman dibuka =====
+// ===== INIT: render dari localStorage =====
 function init() {
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   const list = Object.values(invoices);
@@ -154,8 +195,7 @@ function init() {
   });
 }
 
-// ===== SYNC total dari invoice.js via localStorage =====
-// Setiap kali halaman ini aktif (focus), refresh total dari localStorage
+// ===== SYNC total dari invoice.js =====
 window.addEventListener("focus", syncTotals);
 
 function syncTotals() {
