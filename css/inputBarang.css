@@ -27,6 +27,12 @@ body {
     z-index: 100;
 }
 
+#hamburger:hover {
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    transform: scale(0.9);
+}
+
 /* ===== SIDEBAR OVERLAY ===== */
 .sidebar-overlay {
     display: none;
