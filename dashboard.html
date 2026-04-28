@@ -22,7 +22,6 @@
             overflow-x: hidden;
         }
 
-        /* ===== SIDEBAR OVERLAY ===== */
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -32,7 +31,6 @@
         }
         .sidebar-overlay.active { display: block; }
 
-        /* ===== SIDEBAR ===== */
         .sidebar {
             position: fixed;
             top: 0;
@@ -140,7 +138,6 @@
         }
         .btn-logout:hover { transform: scale(0.95); }
 
-        /* ===== NAVBAR ===== */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -165,13 +162,11 @@
         .hamburger { transition: transform 0.2s; }
         .hamburger:hover { transform: scale(0.9); }
 
-        /* ===== MAIN ===== */
         .main {
             margin-top: 45px;
             padding: 20px 24px 40px;
         }
 
-        /* ===== WELCOME BANNER ===== */
         .welcome-banner {
             background: rgb(16, 44, 168);
             color: white;
@@ -192,7 +187,6 @@
         .welcome-date { text-align: right; font-size: 13px; color: #aac4ff; }
         .welcome-date span { display: block; font-size: 20px; font-weight: 700; color: white; }
 
-        /* ===== STATS CARDS ===== */
         .section-title {
             font-size: 13px;
             font-weight: 700;
@@ -237,7 +231,6 @@
         .stat-value { font-size: 28px; font-weight: 800; color: rgb(16, 44, 168); line-height: 1; }
         .stat-sub { font-size: 11px; color: #aaa; }
 
-        /* ===== CHARTS ===== */
         .charts-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -254,7 +247,6 @@
         }
         .chart-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
 
-        /* ===== RECENT TABLE ===== */
         .recent-card {
             background: white;
             border: 2px solid #111;
@@ -290,7 +282,6 @@
         }
         .badge-green { background: #d4f7e7; color: #0a6640; }
 
-        /* ===== QUICK ACCESS ===== */
         .quick-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -327,10 +318,8 @@
 </head>
 <body>
 
-    <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span>INVENZ</span>
@@ -355,7 +344,6 @@
         </div>
     </div>
 
-    <!-- Navbar -->
     <div class="navbar">
         <i class="bx bx-menu hamburger" id="hamburger"></i>
         <div class="nav-title">
@@ -365,10 +353,8 @@
         <i class="bxf bx-user-circle" id="navUser"></i>
     </div>
 
-    <!-- Main Content -->
     <div class="main">
 
-        <!-- Welcome Banner -->
         <div class="welcome-banner">
             <div class="welcome-text">
                 <h2>Selamat Datang, <span id="welcomeUser">Admin</span> 👋</h2>
@@ -380,7 +366,6 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
         <div class="section-title">Ringkasan Stok</div>
         <div class="stats-grid">
             <div class="stat-card">
@@ -409,7 +394,6 @@
             </div>
         </div>
 
-        <!-- Charts -->
         <div class="section-title">Distribusi Barang</div>
         <div class="charts-row">
             <div class="chart-card">
@@ -424,7 +408,6 @@
             </div>
         </div>
 
-        <!-- Recent Invoices -->
         <div class="section-title">Invoice Terbaru</div>
         <div class="recent-card">
             <h4>🧾 Daftar Invoice Masuk</h4>
@@ -465,18 +448,16 @@
     </div>
 
     <script>
-        // ===== AUTH CHECK =====
+
         if (!localStorage.getItem('isLoggedIn')) {
             window.location.href = 'login.html';
         }
 
-        // ===== USER INFO =====
         const loggedUser = localStorage.getItem('loggedUser') || 'Admin';
         document.getElementById('welcomeUser').textContent = loggedUser;
         document.getElementById('sidebarUsername').textContent = loggedUser;
         document.getElementById('sidebarAvatar').textContent = loggedUser.charAt(0).toUpperCase();
 
-        // ===== CLOCK =====
         function updateClock() {
             const now = new Date();
             document.getElementById('clockDisplay').textContent =
@@ -487,7 +468,6 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // ===== SIDEBAR =====
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
         document.getElementById('hamburger').addEventListener('click', () => {
@@ -501,7 +481,6 @@
             overlay.classList.remove('active');
         }
 
-        // ===== LOGOUT =====
         function doLogout() {
             localStorage.removeItem('isLoggedIn');
             localStorage.removeItem('loggedUser');
@@ -510,7 +489,6 @@
         document.getElementById('logoutBtn').addEventListener('click', doLogout);
         document.getElementById('logoutQuick').addEventListener('click', doLogout);
 
-        // ===== LOAD DATA =====
         const invoices = JSON.parse(localStorage.getItem('invoices') || '{}');
         const invoiceList = Object.values(invoices);
         const allItems = [];
@@ -518,7 +496,6 @@
             if (inv.items && Array.isArray(inv.items)) allItems.push(...inv.items);
         });
 
-        // Stats
         const totalStok = allItems.reduce((s, i) => s + (parseInt(i.stok) || 0), 0);
         const uniqueKategori = new Set(allItems.map(i => (i.kategori || 'Lainnya').toLowerCase()));
         const uniqueNama = new Set(allItems.map(i => i.nama.toLowerCase()));
@@ -527,7 +504,6 @@
         document.getElementById('statJenis').textContent = uniqueNama.size;
         document.getElementById('statInvoice').textContent = invoiceList.length;
 
-        // ===== PIE CHART =====
         const kategoriMap = {};
         allItems.forEach(item => {
             const k = item.kategori || 'Lainnya';
@@ -555,7 +531,6 @@
             document.getElementById('pieEmpty').style.display = 'block';
         }
 
-        // ===== BAR CHART =====
         const merkMap = {};
         allItems.forEach(item => {
             const m = item.merk || 'Lainnya';
@@ -591,7 +566,7 @@
             document.getElementById('barEmpty').style.display = 'block';
         }
 
-        // ===== RECENT INVOICES TABLE =====
+        //  Invoice table - masih belum sempurna
         const tbody = document.getElementById('recentTableBody');
         if (invoiceList.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Belum ada invoice</td></tr>';
