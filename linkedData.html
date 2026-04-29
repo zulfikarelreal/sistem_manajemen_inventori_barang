@@ -6,8 +6,6 @@
     <link rel="stylesheet" href="css/linkedData.css">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
-    <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
-    <link href="https://cdn.boxicons.com/animations.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Linked Data | Invenz</title>
 </head>
@@ -32,7 +30,7 @@
         <ul class="sidebar-menu">
             <li><a href="dashboard.html"><i class="bx bx-home"></i> Dashboard</a></li>
             <li><a href="inputBarang.html"><i class="bx bx-package"></i> Input Barang</a></li>
-            <li><a href="globalStok.html"><i class="bx bx-list-ul-square"></i> Global Stok</a></li>
+            <li><a href="globalStok.html"><i class="bx bx-list-ul"></i> Global Stok</a></li>
             <li><a href="stockOut.html"><i class="bx bx-truck"></i> Stock Out</a></li>
             <li><a href="linkedData.html" class="active"><i class="bx bx-network-chart"></i> Linked Data</a></li>
         </ul>
@@ -53,7 +51,186 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
-    <script src="stockOut.js"></script>
+    <!-- Main Content -->
+    <div class="main">
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="kategori">
+                <i class="bx bx-categories"></i> Kategori
+            </button>
+            <button class="tab-btn" data-tab="merk">
+                <i class="bx bx-price-tag"></i> Merk
+            </button>
+            <button class="tab-btn" data-tab="supplier">
+                <i class="bx bx-department-store"></i> Supplier
+            </button>
+            <button class="tab-btn" data-tab="lokasi">
+                <i class="bx bx-map"></i> Lokasi Inventori
+            </button>
+            <button class="tab-btn" data-tab="penerima">
+                <i class="bx bx-user"></i> Penerima/Tujuan
+            </button>
+        </div>
 
+        <!-- Tab Content Container -->
+        <div class="tab-content-container">
+            
+            <!-- ===== KATEGORI ===== -->
+            <div class="tab-content active" data-content="kategori">
+                <div class="section-header">
+                    <h3>Data Kategori</h3>
+                    <button class="btn-add" id="btnAddKategori">
+                        <i class="bx bx-plus"></i> Tambah Kategori
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Kategori</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableKategori">
+                            <tr class="empty-row"><td colspan="3">Belum ada data kategori</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== MERK ===== -->
+            <div class="tab-content" data-content="merk">
+                <div class="section-header">
+                    <h3>Data Merk</h3>
+                    <button class="btn-add" id="btnAddMerk">
+                        <i class="bx bx-plus"></i> Tambah Merk
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Merk</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableMerk">
+                            <tr class="empty-row"><td colspan="3">Belum ada data merk</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== SUPPLIER ===== -->
+            <div class="tab-content" data-content="supplier">
+                <div class="section-header">
+                    <h3>Data Supplier</h3>
+                    <button class="btn-add" id="btnAddSupplier">
+                        <i class="bx bx-plus"></i> Tambah Supplier
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Supplier</th>
+                                <th>Kontak</th>
+                                <th>Alamat</th>
+                                <th>Keterangan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableSupplier">
+                            <tr class="empty-row"><td colspan="6">Belum ada data supplier</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== LOKASI ===== -->
+            <div class="tab-content" data-content="lokasi">
+                <div class="section-header">
+                    <h3>Data Lokasi Inventori</h3>
+                    <button class="btn-add" id="btnAddLokasi">
+                        <i class="bx bx-plus"></i> Tambah Lokasi
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Lokasi Inventori</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableLokasi">
+                            <tr class="empty-row"><td colspan="3">Belum ada data lokasi</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== PENERIMA ===== -->
+            <div class="tab-content" data-content="penerima">
+                <div class="section-header">
+                    <h3>Data Penerima/Tujuan</h3>
+                    <button class="btn-add" id="btnAddPenerima">
+                        <i class="bx bx-plus"></i> Tambah Penerima
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Penerima/Tujuan</th>
+                                <th>Keterangan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablePenerima">
+                            <tr class="empty-row"><td colspan="4">Belum ada data penerima</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal Universal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3 id="modalTitle">Tambah Data</h3>
+            <div class="modal-form" id="modalForm">
+                <!-- Form fields akan diisi oleh JS -->
+            </div>
+            <p class="error-msg" id="errorMsg"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="btnBatal">Batal</button>
+                <button class="btn-simpan" id="btnSimpan">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-confirm">
+            <div class="confirm-icon">🗑️</div>
+            <h3>Hapus Data?</h3>
+            <p class="confirm-desc">Data akan dihapus permanen dan tidak bisa dikembalikan.</p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="confirmNo">Tidak</button>
+                <button class="btn-hapus-confirm" id="confirmYes">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="linkedData.js"></script>
 </body>
 </html>
