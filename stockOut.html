@@ -7,12 +7,11 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
-    <link href="https://cdn.boxicons.com/animations.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Stock Out | Invenz</title>
 </head>
 <body>
-    
+
     <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -46,13 +45,74 @@
     <!-- Navbar -->
     <div class="navbar">
         <i class="bx bx-menu hamburger" id="hamburger"></i>
-        <div class="nav-title">
-            <i class="bx bx-truck"></i>
-            <span>STOCK OUT</span>
+        <div class="title">
+            <i class="bxf bx-truck"></i>
+            <h6>STOCK OUT</h6>
         </div>
         <i class="bxf bx-user-circle"></i>
     </div>
 
+    <!-- Nav Control -->
+    <div class="nav-controll">
+        <p>* klik invoice untuk melihat & mengelola barang keluar</p>
+        <div class="stockout-btn" id="openModalBtn">
+            <i class="bx bx-plus"></i> Stock Out
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Invoice Keluar</th>
+                    <th>Tanggal Keluar</th>
+                    <th>Nama Penerima</th>
+                    <th>Total Barang</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr class="empty-row">
+                    <td colspan="6">Belum ada data — klik "Stock Out" untuk membuat invoice keluar</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Buat Invoice Keluar -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3><i class="bx bx-truck"></i> Buat Invoice Keluar</h3>
+            <div class="modal-form">
+                <input type="text" id="inputInvoice" placeholder="No. Invoice Keluar (contoh: INV-OUT-001)">
+                <input type="date" id="inputTanggal">
+                <input type="text" id="inputPenerima" placeholder="Nama Penerima" list="penerimaList">
+                <datalist id="penerimaList"></datalist>
+            </div>
+            <p class="error-msg" id="errorMsg"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="batalBtn">Batal</button>
+                <button class="btn-simpan" id="simpanBtn">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-confirm">
+            <div class="confirm-icon">🗑️</div>
+            <h3>Hapus Invoice Keluar?</h3>
+            <p class="confirm-desc">Data invoice keluar ini akan dihapus permanen dan stok akan dikembalikan.</p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="confirmNo">Tidak</button>
+                <button class="btn-hapus-confirm" id="confirmYes">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
     <script src="stockOut.js"></script>
 </body>
 </html>
