@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventori — Sidebar</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="sidebar.css" />
+</head>
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<button class="hamburger" aria-label="Menu">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+</button>
+
+<aside class="sidebar" id="sidebar">
+
+  <div class="sidebar__brand">
+    <div class="sidebar__logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 0-4 0v2"/>
+        <line x1="12" y1="12" x2="12" y2="16"/>
+        <line x1="10" y1="14" x2="14" y2="14"/>
+      </svg>
+    </div>
+    <div class="sidebar__title">
+      StokMaster
+      <span>Inventory System</span>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav">
+
+    <div class="nav-section">
+      <div class="nav-section__label">Menu Utama</div>
+
+      <a href="#" class="nav-item active">
+        <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <a href="#" class="nav-item">
+        <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3h18v18H3z"/><path d="M3 9h18M9 3v18"/>
+        </svg>
+        Global Stok
+        <span class="badge">12</span>
+      </a>
+
+      <a href="#" class="nav-item">
+        <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        Input Barang
+      </a>
+
+      <a href="#" class="nav-item">
+        <svg class="nav-item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+        Migrasi Barang
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section__label">Data Referensi</div>
+
+      <div class="nav-group">
+        <button class="nav-group__toggle open" id="linkedToggle">
+          <svg class="nav-group__toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span class="nav-group__label">Linked Data</span>
+          <svg class="nav-group__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+
+        <div class="nav-group__children open" id="linkedChildren">
+          <a href="#" class="nav-sub">Input Kategori</a>
+          <a href="#" class="nav-sub">Input Merk</a>
+          <a href="#" class="nav-sub">Input Supplier</a>
+          <a href="#" class="nav-sub">Input Lokasi Inventori</a>
+          <a href="#" class="nav-sub">Pengelola Destinasi / Penerima</a>
+        </div>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="sidebar__footer">
+    <div class="user-card">
+      <div class="user-avatar">A</div>
+      <div class="user-info">
+        <div class="user-name">Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <svg class="user-card__more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+      </svg>
+    </div>
+  </div>
+
+</aside>
+
+<main class="main">
+  <div class="main__heading">Dashboard</div>
+  <div class="main__sub">Selamat datang di StokMaster — sistem manajemen inventori Anda.</div>
+</main>
+
+<script src="sidebar.js" defer></script>
+</body>
+</html>
