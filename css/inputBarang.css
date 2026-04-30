@@ -25,6 +25,7 @@ body {
     position: fixed;
     top: 0;
     z-index: 100;
+    border-bottom: 2px solid #111;
 }
 
 #hamburger:hover {
