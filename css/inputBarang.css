@@ -166,13 +166,91 @@ i {
     cursor: pointer;
 }
 
-/* ===== NAV CONTROL ===== */
+/* ============================================================
+   TAMBAHAN CSS — append ke inputBarang.css
+   Styles untuk summary stats bar di inputBarang
+   ============================================================ */
+
+/* ===== SUMMARY STATS BAR ===== */
+/* .summary-stats {
+    display: flex;
+    align-items: center;
+    width: 90%;
+    margin: 65px auto 0;
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+    box-shadow: 3px 5px 0 0 black;
+    overflow: hidden;
+}
+
+.stat-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+}
+
+.stat-item i {
+    font-size: 28px !important;
+    cursor: default;
+    flex-shrink: 0;
+}
+
+.stat-icon-blue   { color: rgb(16, 44, 168); }
+.stat-icon-green  { color: #0a6640; }
+.stat-icon-yellow { color: #856404; }
+
+.stat-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111;
+    line-height: 1;
+}
+
+.stat-lbl {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 40px;
+    background: #ddd;
+    flex-shrink: 0;
+} */
+
+/* Responsive: stack pada layar kecil */
+/* @media (max-width: 520px) {
+    .summary-stats {
+        flex-direction: column;
+        width: 90%;
+    }
+    .stat-divider {
+        width: 80%;
+        height: 1px;
+    }
+    .stat-item {
+        width: 100%;
+        justify-content: center;
+    }
+} */
+
+/* GANTI total menjadi satu deklarasi ini saja: */
 .nav-controll {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 90%;
-    margin-top: 65px;
+    margin-top: 14px;   /* ← bukan 65px, bukan pakai !important */
     padding: 5px 0;
 }
 

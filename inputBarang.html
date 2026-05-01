@@ -14,10 +14,8 @@
 </head>
 <body>
 
-    <!-- Sidebar Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <span>INVENZ</span>
@@ -53,6 +51,8 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
+<br> <br>
+
     <div class="nav-controll">
         <p>* klik invoice untuk menambah barang</p>
         <div class="inputbarang-btn" id="openModalBtn">Input Barang</div>
@@ -66,13 +66,14 @@
                     <th>Invoice</th>
                     <th>Tanggal Masuk</th>
                     <th>Nama Supplier</th>
-                    <th>Total Barang</th>
+                    <th>Jenis Barang</th>
+                    <th>Total Stok Masuk</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr class="empty-row">
-                    <td colspan="6">Belum ada data — klik "Input Barang" untuk menambah</td>
+                    <td colspan="7">Belum ada data — klik "Input Barang" untuk menambah</td>
                 </tr>
             </tbody>
         </table>
@@ -85,8 +86,6 @@
             <div class="modal-form">
                 <input type="text" id="inputInvoice" placeholder="Invoice" autocomplete="off">
                 <input type="date" id="inputTanggal">
-
-                <!-- Custom Dropdown: Supplier -->
                 <div class="cd-wrapper" id="cdSupplier">
                     <div class="cd-input-row">
                         <input type="text" class="cd-input" placeholder="Nama Supplier" autocomplete="off" id="inputSupplier">
@@ -123,8 +122,8 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script src="customDropdown.js"></script>
-    <script src="inputBarang.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customDropdown.js"></script>
+    <script src="js/inputBarang.js"></script>
 </body>
 </html>

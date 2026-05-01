@@ -21,9 +21,8 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
-    <div class="invoice-info" id="invoiceInfo">
-        <!-- Diisi JS -->
-    </div>
+    <!-- Info box diisi JS — sekarang 5 item: Invoice, Tanggal, Supplier, Jenis Barang, Total Stok Masuk -->
+    <div class="invoice-info" id="invoiceInfo"></div>
 
     <div class="nav-controll">
         <p>* klik tambah barang untuk menambah item</p>
@@ -38,14 +37,15 @@
                     <th>Nama Barang</th>
                     <th>Kategori</th>
                     <th>Merk</th>
-                    <th>Stok</th>
+                    <th>Stok Masuk</th>
+                    <th>Stok Saat Ini</th>
                     <th>Lokasi Inventori</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="itemTableBody">
                 <tr class="empty-row">
-                    <td colspan="7">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>
+                    <td colspan="8">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>
                 </tr>
             </tbody>
         </table>
@@ -57,7 +57,6 @@
             <h3>Tambah Barang</h3>
             <div class="modal-form">
 
-                <!-- Nama Barang -->
                 <div class="cd-wrapper" id="cdNama">
                     <div class="cd-input-row">
                         <input type="text" class="cd-input" placeholder="Nama Barang" autocomplete="off" id="inputNama">
@@ -73,7 +72,6 @@
                     </div>
                 </div>
 
-                <!-- Kategori -->
                 <div class="cd-wrapper" id="cdKategori">
                     <div class="cd-input-row">
                         <input type="text" class="cd-input" placeholder="Kategori" autocomplete="off" id="inputKategori">
@@ -89,7 +87,6 @@
                     </div>
                 </div>
 
-                <!-- Merk -->
                 <div class="cd-wrapper" id="cdMerk">
                     <div class="cd-input-row">
                         <input type="text" class="cd-input" placeholder="Merk" autocomplete="off" id="inputMerk">
@@ -105,10 +102,8 @@
                     </div>
                 </div>
 
-                <!-- Stok: angka biasa, tidak perlu dropdown -->
                 <input type="number" id="inputStok" placeholder="Stok" min="0">
 
-                <!-- Lokasi -->
                 <div class="cd-wrapper" id="cdLokasi">
                     <div class="cd-input-row">
                         <input type="text" class="cd-input" placeholder="Lokasi Inventori" autocomplete="off" id="inputLokasi">
@@ -146,8 +141,8 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script src="customDropdown.js"></script>
-    <script src="invoice.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customDropdown.js"></script>
+    <script src="js/invoice.js"></script>
 </body>
 </html>
