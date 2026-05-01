@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/invoiceKeluar.css">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Invoice Keluar | Invenz</title>
+</head>
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>INVENZ</span>
+            <i class="bx bx-x sidebar-close" id="sidebarClose"></i>
+        </div>
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+            <div>
+                <div class="sidebar-username" id="sidebarUsername">Admin</div>
+                <div class="sidebar-role">Operator Inventori</div>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html"><i class="bx bx-home"></i> Dashboard</a></li>
+            <li><a href="inputBarang.html"><i class="bx bx-package"></i> Input Barang</a></li>
+            <li><a href="globalStok.html"><i class="bx bx-list-ul-square"></i> Global Stok</a></li>
+            <li><a href="stockOut.html" class="active"><i class="bx bx-truck"></i> Stock Out</a></li>
+            <li><a href="linkedData.html"><i class="bx bx-network-chart"></i> Linked Data</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn">
+                <i class="bx bx-log-out"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <i class="bx bx-menu hamburger" id="hamburger"></i>
+        <div class="title">
+            <i class="bxf bx-truck"></i>
+            <h6 id="navTitle">INVOICE KELUAR</h6>
+        </div>
+        <i class="bxf bx-user-circle"></i>
+    </div>
+
+    <!-- Invoice Info Bar -->
+    <div class="invoice-info-bar">
+        <a href="stockOut.html" class="back-btn">
+            <i class="bx bx-arrow-back"></i> Kembali
+        </a>
+        <div class="info-chips">
+            <span class="chip chip-invoice" id="chipInvoice">—</span>
+            <span class="chip chip-tanggal" id="chipTanggal">—</span>
+            <span class="chip chip-penerima" id="chipPenerima">—</span>
+        </div>
+        <button class="btn-add-item" id="btnAddItem">
+            <i class="bx bx-plus"></i> Stock Out Barang
+        </button>
+    </div>
+
+    <!-- Table -->
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama Barang</th>
+                    <th>Kategori</th>
+                    <th>Merk</th>
+                    <th>Lokasi Inventori</th>
+                    <th>Invoice Asal</th>
+                    <th>Jumlah Keluar</th>
+                    <th>Sisa Stok</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr class="empty-row">
+                    <td colspan="9">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Footer -->
+    <div class="summary-bar" id="summaryBar">
+        <span>Total barang keluar: <strong id="summaryTotal">0</strong> item</span>
+    </div>
+
+    <!-- ===== MODAL PILIH BARANG ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal modal-wide">
+            <div class="modal-header">
+                <h3><i class="bx bx-search"></i> Pilih Barang dari Stok</h3>
+                <input type="text" id="searchBarang" class="search-input" placeholder="🔍 Cari nama barang, kategori, merk...">
+            </div>
+
+            <div class="stok-list" id="stokList">
+                <!-- Daftar barang dari global stok -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-batal" id="batalBtn">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL JUMLAH KELUAR ===== -->
+    <div class="modal-overlay" id="jumlahOverlay">
+        <div class="modal modal-jumlah">
+            <h3><i class="bx bx-export"></i> Jumlah Keluar</h3>
+            <div class="barang-preview" id="barangPreview">
+                <!-- Info barang yang dipilih -->
+            </div>
+            <div class="modal-form">
+                <label>Jumlah yang dikeluarkan:</label>
+                <div class="qty-control">
+                    <button class="qty-btn" id="qtyMinus">−</button>
+                    <input type="number" id="inputJumlah" min="1" value="1">
+                    <button class="qty-btn" id="qtyPlus">+</button>
+                </div>
+                <p class="stok-info" id="stokInfo"></p>
+            </div>
+            <p class="error-msg" id="errorMsgJumlah"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="batalJumlahBtn">Batal</button>
+                <button class="btn-out" id="konfirmasiOutBtn">
+                    <i class="bx bx-check"></i> Konfirmasi Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus item -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-confirm">
+            <div class="confirm-icon">↩️</div>
+            <h3>Kembalikan Barang?</h3>
+            <p class="confirm-desc">Barang ini akan dihapus dari invoice keluar dan stoknya dikembalikan.</p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="confirmNo">Tidak</button>
+                <button class="btn-hapus-confirm" id="confirmYes">Ya, Kembalikan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="invoiceKeluar.js"></script>
+</body>
+</html>

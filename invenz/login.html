@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/login.css">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
+    <title>Login | Invenz - Sistem Manajemen Inventori</title>
+</head>
+
+<body>
+    
+    <div class="btn-back">
+        <a href="index.html"><img src="assets/back-btn.png" width="40px" alt="back-btn"></a>
+    </div>
+
+    <div class="title">
+        <h1>INVENZ</h1>
+        <h3>Sistem Manajemen Inventori</h3>
+    </div>
+
+    <div class="container">
+        <form action="">
+            <h1>LOGIN</h1>
+            <div class="login-box">
+                <input type="text" placeholder="Username" id="username" required>
+                <i class="bxf bx-user-circle"></i>
+                <input type="password" placeholder="Password" id="password" required>
+                <i class="bxf bx-lock-keyhole"></i>
+                <input type="submit" id="submit">
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const validUsers = [
+            { username: "admin", password: "admin123" },
+            { username: "invenz", password: "invenz2024" }
+        ];
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            const user = validUsers.find(u => u.username === username && u.password === password);
+
+            if (user) {
+                localStorage.setItem('isLoggedIn', 'true');
+
+                // Simpan username dengan huruf kapital di awal
+                const formattedName = username.charAt(0).toUpperCase() + username.slice(1);
+                localStorage.setItem('loggedUser', formattedName);
+
+                window.location.href = 'dashboard.html';
+            } else {
+                showError('Username atau password salah!');
+            }
+        });
+
+        function showError(msg) {
+            const existing = document.querySelector('.error-login');
+            if (existing) existing.remove();
+
+            const err = document.createElement('p');
+            err.className = 'error-login';
+            err.textContent = msg;
+            err.style.cssText = `
+                color: #cc2222;
+                font-size: 13px;
+                text-align: center;
+                margin-top: 10px;
+            `;
+            document.querySelector('.login-box').appendChild(err);
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+    <title>Global Stok | Invenz</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+
+        body { background-color: aliceblue; min-height: 100vh; overflow-x: hidden; }
+
+        /* SIDEBAR OVERLAY */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; }
+        .sidebar-overlay.active { display: block; }
+
+        /* SIDEBAR */
+        .sidebar { position: fixed; top: 0; left: -240px; width: 240px; height: 100vh; background: #fff; border-right: 2px solid #111; box-shadow: 6px 0 0 0 #111; z-index: 200; display: flex; flex-direction: column; transition: left 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .sidebar.open { left: 0; }
+        .sidebar-header { background: aqua; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #111; height: 45px; }
+        .sidebar-header span { font-weight: 800; font-size: 18px; }
+        .sidebar-close { font-size: 24px; cursor: pointer; transition: transform 0.2s; }
+        .sidebar-close:hover { transform: scale(0.9); }
+        .sidebar-user { padding: 18px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+        .sidebar-avatar { width: 40px; height: 40px; border-radius: 50%; background: rgb(16,44,168); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; border: 2px solid #111; flex-shrink: 0; }
+        .sidebar-username { font-weight: 600; font-size: 14px; }
+        .sidebar-role { font-size: 11px; color: #888; }
+        .sidebar-menu { flex: 1; padding: 10px 0; list-style: none; }
+        .sidebar-menu li a { display: flex; align-items: center; gap: 12px; padding: 11px 18px; font-size: 14px; font-weight: 500; color: #111; text-decoration: none; transition: background 0.15s; border-left: 3px solid transparent; }
+        .sidebar-menu li a:hover, .sidebar-menu li a.active { background: #e8f0ff; border-left-color: rgb(16,44,168); color: rgb(16,44,168); }
+        .sidebar-menu li a i { font-size: 20px; }
+        .sidebar-footer { padding: 14px 18px; border-top: 1px solid #eee; }
+        .btn-logout { width: 100%; padding: 9px; background: #ff4d4d; color: white; border: 1px solid #111; border-radius: 8px; box-shadow: 3px 3px 0 0 #111; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.15s; font-family: "Poppins", sans-serif; }
+        .btn-logout:hover { transform: scale(0.95); }
+
+        /* NAVBAR */
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 5px 15px; width: 100%; height: 45px; background-color: aqua; position: fixed; top: 0; z-index: 100; border-bottom: 2px solid #111; }
+        .nav-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; }
+        .navbar i { font-size: 26px; cursor: pointer; }
+        .hamburger { transition: transform 0.2s; }
+        .hamburger:hover { transform: scale(0.9); }
+
+        /* MAIN */
+        .main { margin-top: 45px; padding: 20px 24px 40px; }
+
+        /* NAV CONTROL */
+        .nav-controll { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .nav-controll p { font-style: italic; font-size: 13px; color: #555; }
+        .search-box { padding: 6px 12px; border-radius: 8px; border: 1px solid #aaa; font-size: 13px; font-family: "Poppins", sans-serif; outline: none; width: 220px; }
+        .search-box:focus { border-color: rgb(16,44,168); background: #f0f4ff; }
+
+        /* TABLE */
+        .container { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background-color: white; border-radius: 10px; overflow: hidden; border: 1px solid black; box-shadow: 3px 5px 0 0 black; }
+        thead { background-color: aqua; }
+        th { padding: 10px 14px; text-align: center; font-size: 13px; font-weight: 600; border-bottom: 2px solid black; }
+        td { padding: 9px 14px; text-align: center; font-size: 13px; border-bottom: 0.5px solid #ddd; }
+        .empty-row td { color: #888; font-style: italic; font-size: 12px; }
+        tbody tr:nth-child(even):not(.empty-row) { background-color: #f0f4ff; }
+        tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: background-color 0.15s ease; }
+
+        /* BADGE */
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid #111; }
+        .badge-blue { background: #dce8ff; color: rgb(16,44,168); }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>INVENZ</span>
+            <i class="bx bx-x sidebar-close" id="sidebarClose"></i>
+        </div>
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+            <div>
+                <div class="sidebar-username" id="sidebarUsername">Admin</div>
+                <div class="sidebar-role">Operator Inventori</div>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html"><i class="bx bx-home"></i> Dashboard</a></li>
+            <li><a href="inputBarang.html"><i class="bx bx-package"></i> Input Barang</a></li>
+            <li><a href="globalStok.html" class="active"><i class="bx bx-list-ul-square"></i> Global Stok</a></li>
+            <li><a href="stockOut.html"><i class="bx bx-truck"></i> Stock Out</a></li>
+            <li><a href="linkedData.html"><i class="bx bx-network-chart"></i> Linked Data</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn">
+                <i class="bx bx-log-out"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <i class="bx bx-menu hamburger" id="hamburger"></i>
+        <div class="nav-title">
+            <i class="bx bx-list-ul-square"></i>
+            <span>GLOBAL STOK</span>
+        </div>
+        <i class="bxf bx-user-circle"></i>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+        <div class="nav-controll">
+            <p>* semua data barang dari seluruh invoice</p>
+            <input type="text" class="search-box" id="searchInput" placeholder="🔍 Cari barang...">
+        </div>
+
+        <!-- ========== POINT 5: TABEL GLOBAL STOK ========== -->
+        <div class="container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Invoice</th>
+                        <th>Tanggal Masuk</th>
+                        <th>Kategori</th>
+                        <th>Nama Barang</th>
+                        <th>Stok</th>
+                        <th>Merk</th>
+                        <th>Lokasi Inventori</th>
+                    </tr>
+                </thead>
+                <tbody id="globalTableBody">
+                    <tr class="empty-row">
+                        <td colspan="8">Belum ada data — tambahkan barang melalui Input Barang</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- ========== END POINT 5 ========== -->
+    </div>
+
+    <script>
+        // AUTH CHECK
+        if (!localStorage.getItem('isLoggedIn')) window.location.href = 'login.html';
+
+        // USER INFO
+        const loggedUser = localStorage.getItem('loggedUser') || 'Admin';
+        document.getElementById('sidebarUsername').textContent = loggedUser;
+        document.getElementById('sidebarAvatar').textContent = loggedUser.charAt(0).toUpperCase();
+
+        // SIDEBAR
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        document.getElementById('hamburger').addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('active'); });
+        document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
+        overlay.addEventListener('click', closeSidebar);
+        function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
+
+        // LOGOUT
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('loggedUser');
+            window.location.href = 'login.html';
+        });
+
+        // ========== POINT 5: LOAD DATA GLOBAL STOK ==========
+        let allRows = []; // simpan semua baris untuk fitur search
+
+        function loadGlobalStok() {
+            const invoices = JSON.parse(localStorage.getItem('invoices') || '{}');
+            const tbody = document.getElementById('globalTableBody');
+            tbody.innerHTML = '';
+            allRows = [];
+
+            let nomor = 1;
+            Object.values(invoices).forEach(inv => {
+                if (!inv.items || inv.items.length === 0) return;
+                inv.items.forEach(item => {
+                    allRows.push({
+                        nomor: nomor++,
+                        invoice: inv.invoice,
+                        tanggal: inv.tanggal,
+                        kategori: item.kategori,
+                        nama: item.nama,
+                        stok: item.stok,
+                        merk: item.merk,
+                        lokasi: item.lokasi
+                    });
+                });
+            });
+
+            if (allRows.length === 0) {
+                tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Belum ada data — tambahkan barang melalui Input Barang</td></tr>';
+                return;
+            }
+
+            renderRows(allRows);
+        }
+
+        function renderRows(rows) {
+            const tbody = document.getElementById('globalTableBody');
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.nomor}</td>
+                    <td><span class="badge badge-blue">${r.invoice}</span></td>
+                    <td>${r.tanggal}</td>
+                    <td>${r.kategori}</td>
+                    <td>${r.nama}</td>
+                    <td>${r.stok}</td>
+                    <td>${r.merk}</td>
+                    <td>${r.lokasi}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // SEARCH
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const keyword = this.value.toLowerCase();
+            if (!keyword) { renderRows(allRows); return; }
+            const filtered = allRows.filter(r =>
+                r.nama.toLowerCase().includes(keyword) ||
+                r.kategori.toLowerCase().includes(keyword) ||
+                r.merk.toLowerCase().includes(keyword) ||
+                r.invoice.toLowerCase().includes(keyword) ||
+                r.lokasi.toLowerCase().includes(keyword)
+            );
+            if (filtered.length === 0) {
+                document.getElementById('globalTableBody').innerHTML =
+                    '<tr class="empty-row"><td colspan="8">Tidak ada data yang cocok</td></tr>';
+            } else {
+                renderRows(filtered);
+            }
+        });
+
+        loadGlobalStok();
+        // ========== END POINT 5 ==========
+    </script>
+</body>
+</html>

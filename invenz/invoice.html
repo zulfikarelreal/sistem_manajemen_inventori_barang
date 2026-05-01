@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/invoice.css">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Detail Invoice | Invenz</title>
+</head>
+<body>
+
+    <div class="navbar">
+        <i class="bxf bx-chevron-left-circle" id="backBtn" title="Kembali"></i>
+        <div class="title">
+            <i class="bxf bx-file"></i>
+            <h6 id="navInvoiceId">INVOICE</h6>
+        </div>
+        <i class="bxf bx-user-circle"></i>
+    </div>
+
+    <div class="invoice-info" id="invoiceInfo">
+        <!-- Diisi JS -->
+    </div>
+
+    <div class="nav-controll">
+        <p>* klik tambah barang untuk menambah item</p>
+        <div class="tambah-btn" id="openTambahBtn">+ Tambah Barang</div>
+    </div>
+
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama Barang</th>
+                    <th>Kategori</th>
+                    <th>Merk</th>
+                    <th>Stok</th>
+                    <th>Lokasi Inventori</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="itemTableBody">
+                <tr class="empty-row">
+                    <td colspan="7">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal Tambah Barang -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>Tambah Barang</h3>
+            <div class="modal-form">
+                <input type="text" id="inputNama" placeholder="Nama Barang">
+                <input type="text" id="inputKategori" placeholder="Kategori">
+                <input type="text" id="inputMerk" placeholder="Merk">
+                <input type="number" id="inputStok" placeholder="Stok" min="0">
+                <input type="text" id="inputLokasi" placeholder="Lokasi Inventori">
+            </div>
+            <p class="error-msg" id="errorMsg"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="batalBtn">Batal</button>
+                <button class="btn-simpan" id="simpanBtn">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-confirm">
+            <div class="confirm-icon">🗑️</div>
+            <h3>Hapus Barang?</h3>
+            <p class="confirm-desc">Data barang ini akan dihapus permanen.</p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="confirmNo">Tidak</button>
+                <button class="btn-hapus-confirm" id="confirmYes">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="invoice.js"></script>
+</body>
+</html>
