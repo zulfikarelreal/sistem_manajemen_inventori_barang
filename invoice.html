@@ -33,19 +33,21 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Nama Barang</th>
-                    <th>Kategori</th>
+                    <th>SKU</th>
+                    <th>Nama Produk</th>
                     <th>Merk</th>
-                    <th>Stok</th>
-                    <th>Harga Satuan</th>
-                    <th>Subtotal</th>
-                    <th>Lokasi Inventori</th>
+                    <th>Kategori</th>
+                    <th>Expired</th>
+                    <th>Harga HPP</th>
+                    <th>Harga Jual</th>
+                    <th>Qty</th>
+                    <th>Total Harga</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="itemTableBody">
                 <tr class="empty-row">
-                    <td colspan="9">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>
+                    <td colspan="11">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>
                 </tr>
             </tbody>
         </table>
@@ -57,73 +59,181 @@
         <strong id="totalHargaDisplay">Rp 0</strong>
     </div>
 
-    <!-- Modal Tambah Barang -->
+    <!-- ===== MODAL TAMBAH BARANG ===== -->
     <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-            <h3>Tambah Barang</h3>
-            <div class="modal-form">
-                <div class="cd-wrapper" id="cdNama">
-                    <div class="cd-input-row">
-                        <input type="text" class="cd-input" placeholder="Nama Barang" autocomplete="off" id="inputNama">
-                        <i class="bx bx-chevron-down cd-arrow"></i>
-                    </div>
-                    <div class="cd-dropdown">
-                        <div class="cd-search-box"><i class="bx bx-search"></i><input type="text" class="cd-search" placeholder="Cari nama barang..."></div>
-                        <ul class="cd-list"></ul>
-                        <div class="cd-empty">Belum ada data.</div>
-                    </div>
-                </div>
-
-                <div class="cd-wrapper" id="cdKategori">
-                    <div class="cd-input-row">
-                        <input type="text" class="cd-input" placeholder="Kategori" autocomplete="off" id="inputKategori">
-                        <i class="bx bx-chevron-down cd-arrow"></i>
-                    </div>
-                    <div class="cd-dropdown">
-                        <div class="cd-search-box"><i class="bx bx-search"></i><input type="text" class="cd-search" placeholder="Cari kategori..."></div>
-                        <ul class="cd-list"></ul>
-                        <div class="cd-empty">Belum ada data.</div>
-                    </div>
-                </div>
-
-                <div class="cd-wrapper" id="cdMerk">
-                    <div class="cd-input-row">
-                        <input type="text" class="cd-input" placeholder="Merk" autocomplete="off" id="inputMerk">
-                        <i class="bx bx-chevron-down cd-arrow"></i>
-                    </div>
-                    <div class="cd-dropdown">
-                        <div class="cd-search-box"><i class="bx bx-search"></i><input type="text" class="cd-search" placeholder="Cari merk..."></div>
-                        <ul class="cd-list"></ul>
-                        <div class="cd-empty">Belum ada data.</div>
-                    </div>
-                </div>
-
-                <div class="input-row-2">
-                    <input type="number" id="inputStok"  placeholder="Stok"         min="0">
-                    <input type="number" id="inputHarga" placeholder="Harga Satuan"  min="0">
-                </div>
-
-                <div class="cd-wrapper" id="cdLokasi">
-                    <div class="cd-input-row">
-                        <input type="text" class="cd-input" placeholder="Lokasi Inventori" autocomplete="off" id="inputLokasi">
-                        <i class="bx bx-chevron-down cd-arrow"></i>
-                    </div>
-                    <div class="cd-dropdown">
-                        <div class="cd-search-box"><i class="bx bx-search"></i><input type="text" class="cd-search" placeholder="Cari lokasi..."></div>
-                        <ul class="cd-list"></ul>
-                        <div class="cd-empty">Belum ada data.</div>
-                    </div>
-                </div>
-
-                <!-- Preview subtotal -->
-                <div class="subtotal-preview" id="subtotalPreview">
-                    Subtotal: <strong id="subtotalVal">Rp 0</strong>
-                </div>
+        <div class="modal modal-tambah">
+            <div class="modal-top-bar">
+                <h3><i class="bx bx-package"></i> Tambah Barang</h3>
+                <button class="modal-close-x" id="modalCloseX"><i class="bx bx-x"></i></button>
             </div>
+
+            <div class="modal-form">
+
+                <!-- SKU -->
+                <div class="form-section-label">Identifikasi Produk</div>
+
+                <div class="form-row">
+                    <label>SKU / Kode Unik <span class="req">*</span></label>
+                    <div class="sku-row">
+                        <input type="text" id="inputSKU" placeholder="Contoh: SKU-001 atau scan barcode" autocomplete="off">
+                        <button class="btn-scan-sku" id="btnScanSKU" title="Scan Barcode SKU">
+                            <i class="bx bx-scan-barcode"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scanner SKU panel -->
+                <div class="scanner-panel hidden" id="scannerSKUPanel">
+                    <div class="scan-box" id="scanBoxSKU">
+                        <video id="cameraStreamSKU" autoplay playsinline></video>
+                        <div class="scan-frame"><div class="scan-line"></div></div>
+                        <div class="scan-placeholder" id="scanPlaceholderSKU">
+                            <i class="bx bx-barcode-reader"></i>
+                            <p>Kamera belum aktif</p>
+                        </div>
+                    </div>
+                    <div class="scan-actions">
+                        <button class="btn-cam" id="btnOpenCamSKU"><i class="bx bx-camera"></i> Kamera</button>
+                        <span class="scan-or">atau</span>
+                        <label class="btn-gallery" for="galleryInputSKU"><i class="bx bx-image"></i> Galeri</label>
+                        <input type="file" id="galleryInputSKU" accept="image/*" style="display:none">
+                        <button class="btn-close-scanner" id="btnCloseScannerSKU"><i class="bx bx-x"></i></button>
+                    </div>
+                    <div class="scan-result hidden" id="scanResultSKU">
+                        <i class="bx bx-check-circle"></i>
+                        <div>
+                            <span class="scan-result-label">Hasil Scan:</span>
+                            <span class="scan-result-val" id="scanResultValSKU">—</span>
+                        </div>
+                        <button class="btn-use-scan" id="btnUseScanSKU">Gunakan</button>
+                    </div>
+                </div>
+
+                <!-- Nama Produk -->
+                <div class="form-row">
+                    <label>Nama Produk <span class="req">*</span></label>
+                    <div class="cd-wrapper" id="cdNama">
+                        <div class="cd-input-row">
+                            <input class="cd-input" id="inputNama" type="text" placeholder="Nama produk" autocomplete="off">
+                            <i class="bx bx-chevron-down cd-arrow"></i>
+                        </div>
+                        <div class="cd-dropdown">
+                            <div class="cd-search-box"><i class="bx bx-search"></i><input class="cd-search" type="text" placeholder="Cari nama barang..."></div>
+                            <ul class="cd-list"></ul>
+                            <div class="cd-empty">Belum ada data.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merk & Kategori -->
+                <div class="form-grid-2">
+                    <div class="form-row">
+                        <label>Merk <span class="req">*</span></label>
+                        <div class="cd-wrapper" id="cdMerk">
+                            <div class="cd-input-row">
+                                <input class="cd-input" id="inputMerk" type="text" placeholder="Merk" autocomplete="off">
+                                <i class="bx bx-chevron-down cd-arrow"></i>
+                            </div>
+                            <div class="cd-dropdown">
+                                <div class="cd-search-box"><i class="bx bx-search"></i><input class="cd-search" type="text" placeholder="Cari merk..."></div>
+                                <ul class="cd-list"></ul>
+                                <div class="cd-empty">Belum ada data.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label>Kategori <span class="req">*</span></label>
+                        <div class="cd-wrapper" id="cdKategori">
+                            <div class="cd-input-row">
+                                <input class="cd-input" id="inputKategori" type="text" placeholder="Kategori" autocomplete="off">
+                                <i class="bx bx-chevron-down cd-arrow"></i>
+                            </div>
+                            <div class="cd-dropdown">
+                                <div class="cd-search-box"><i class="bx bx-search"></i><input class="cd-search" type="text" placeholder="Cari kategori..."></div>
+                                <ul class="cd-list"></ul>
+                                <div class="cd-empty">Belum ada data.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expired Date -->
+                <div class="form-section-label" style="margin-top:4px">Tanggal & Harga</div>
+
+                <div class="form-row">
+                    <label>Expired Date <span class="opt">(opsional)</span></label>
+                    <div class="sku-row">
+                        <input type="date" id="inputExpired">
+                        <button class="btn-scan-sku" id="btnScanExpired" title="Scan Expired Date">
+                            <i class="bx bx-scan"></i>
+                        </button>
+                    </div>
+                    <span class="field-hint">Kosongkan jika tidak ada expired date</span>
+                </div>
+
+                <!-- Scanner Expired panel -->
+                <div class="scanner-panel hidden" id="scannerExpiredPanel">
+                    <div class="scan-box" id="scanBoxExpired">
+                        <video id="cameraStreamExpired" autoplay playsinline></video>
+                        <div class="scan-frame"><div class="scan-line"></div></div>
+                        <div class="scan-placeholder" id="scanPlaceholderExpired">
+                            <i class="bx bx-barcode-reader"></i>
+                            <p>Kamera belum aktif</p>
+                        </div>
+                    </div>
+                    <div class="scan-actions">
+                        <button class="btn-cam" id="btnOpenCamExpired"><i class="bx bx-camera"></i> Kamera</button>
+                        <span class="scan-or">atau</span>
+                        <label class="btn-gallery" for="galleryInputExpired"><i class="bx bx-image"></i> Galeri</label>
+                        <input type="file" id="galleryInputExpired" accept="image/*" style="display:none">
+                        <button class="btn-close-scanner" id="btnCloseScannerExpired"><i class="bx bx-x"></i></button>
+                    </div>
+                    <div class="scan-result hidden" id="scanResultExpired">
+                        <i class="bx bx-check-circle"></i>
+                        <div>
+                            <span class="scan-result-label">Hasil Scan:</span>
+                            <span class="scan-result-val" id="scanResultValExpired">—</span>
+                        </div>
+                        <button class="btn-use-scan" id="btnUseScanExpired">Gunakan</button>
+                    </div>
+                </div>
+
+                <!-- Harga HPP & Harga Jual -->
+                <div class="form-grid-2">
+                    <div class="form-row">
+                        <label>Harga HPP/Modal <span class="req">*</span></label>
+                        <input type="number" id="inputHargaHPP" placeholder="0" min="0">
+                    </div>
+                    <div class="form-row">
+                        <label>Harga Jual</label>
+                        <input type="number" id="inputHargaJual" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <!-- Jumlah & Total -->
+                <div class="form-grid-2">
+                    <div class="form-row">
+                        <label>Jumlah / Qty <span class="req">*</span></label>
+                        <input type="number" id="inputStok" placeholder="0" min="0">
+                    </div>
+                    <div class="subtotal-preview">
+                        <span class="subtotal-label">Total Harga</span>
+                        <strong id="subtotalVal">Rp 0</strong>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SKU autofill notice -->
+            <div class="autofill-notice hidden" id="autofillNotice">
+                <i class="bx bx-info-circle"></i>
+                <span>Data produk ditemukan dari SKU. Isi jumlah barang untuk melanjutkan.</span>
+            </div>
+
             <p class="error-msg" id="errorMsg"></p>
             <div class="modal-actions">
                 <button class="btn-batal" id="batalBtn">Batal</button>
-                <button class="btn-simpan" id="simpanBtn">Simpan</button>
+                <button class="btn-simpan" id="simpanBtn"><i class="bx bx-save"></i> Simpan</button>
             </div>
         </div>
     </div>

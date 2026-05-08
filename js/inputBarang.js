@@ -281,7 +281,7 @@ document
 
 function simulateScan() {
   // Simulasi hasil scan barcode — di production gunakan ZXing/Quagga
-  const fakeScan = "INV-" + Date.now().toString().slice(-6);
+  const fakeScan = Date.now().toString().slice(-6);
   showScanResult(fakeScan);
   if (cameraStream) {
     cameraStream.getTracks().forEach((t) => t.stop());
