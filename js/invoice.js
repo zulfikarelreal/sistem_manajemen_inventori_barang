@@ -14,6 +14,7 @@ const confirmYes = document.getElementById("confirmYes");
 const confirmNo = document.getElementById("confirmNo");
 const errorMsg = document.getElementById("errorMsg");
 const inputStok = document.getElementById("inputStok");
+const inputHarga = document.getElementById("inputHarga");
 
 let rowCount = 0;
 let rowToDelete = null;
@@ -138,6 +139,7 @@ function init() {
 function updateTotal() {
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   if (!invoices[invoiceId]) return;
+  // total: total stok masuk (dipakai fitur sebelumnya)
   const total = invoices[invoiceId].items.reduce(
     (sum, item) => sum + (parseInt(item.stok) || 0),
     0,
@@ -170,6 +172,8 @@ function clearForm() {
   ddMerk.clear();
   ddLokasi.clear();
   inputStok.value = "";
+  inputHarga.value = "";
+
   errorMsg.textContent = "";
 }
 
@@ -179,9 +183,10 @@ function simpanItem() {
   const kategori = ddKategori.getValue();
   const merk = ddMerk.getValue();
   const stok = inputStok.value.trim();
+  const harga = inputHarga.value.trim();
   const lokasi = ddLokasi.getValue();
 
-  if (!nama || !kategori || !merk || !stok || !lokasi) {
+  if (!nama || !kategori || !merk || !stok || !harga || !lokasi) {
     errorMsg.textContent = "Semua field harus diisi!";
     return;
   }
@@ -191,7 +196,7 @@ function simpanItem() {
   autoAddToLinkedData("merk", merk);
   autoAddToLinkedData("lokasi", lokasi);
 
-  const item = { nama, kategori, merk, stok, lokasi };
+  const item = { nama, kategori, merk, stok, harga, lokasi };
 
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   if (!invoices[invoiceId]) {
@@ -265,6 +270,7 @@ confirmYes.addEventListener("click", () => {
   }
   confirmOverlay.classList.remove("active");
 });
+
 confirmNo.addEventListener("click", () => {
   rowToDelete = null;
   confirmOverlay.classList.remove("active");

@@ -250,7 +250,7 @@ i {
     justify-content: space-between;
     align-items: center;
     width: 90%;
-    margin-top: 14px;   /* ← bukan 65px, bukan pakai !important */
+    margin-top: 60px;
     padding: 5px 0;
 }
 

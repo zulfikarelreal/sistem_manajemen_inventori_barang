@@ -51,11 +51,24 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
-<br> <br>
-
     <div class="nav-controll">
         <p>* klik invoice untuk menambah barang</p>
-        <div class="inputbarang-btn" id="openModalBtn">Input Barang</div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <div class="cd-wrapper" id="cdRange">
+                <div class="cd-input-row">
+                    <input type="text" class="cd-input" placeholder="Rentang waktu" autocomplete="off" id="inputRange">
+                    <i class="bx bx-chevron-down cd-arrow"></i>
+                </div>
+                <div class="cd-dropdown">
+                    <div class="cd-search-box">
+                        <i class="bx bx-search"></i>
+                        <input type="text" class="cd-search" placeholder="Cari...">
+                    </div>
+                    <ul class="cd-list"></ul>
+                </div>
+            </div>
+            <div class="inputbarang-btn" id="openModalBtn">Input Barang</div>
+        </div>
     </div>
 
     <div class="container">
@@ -68,6 +81,7 @@
                     <th>Nama Supplier</th>
                     <th>Jenis Barang</th>
                     <th>Total Stok Masuk</th>
+                    <th>Total Harga Transaksi</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -79,12 +93,17 @@
         </table>
     </div>
 
-    <!-- Modal Input Barang -->
+<!-- Modal Input Barang -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h3>Input Barang</h3>
             <div class="modal-form">
-                <input type="text" id="inputInvoice" placeholder="Invoice" autocomplete="off">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" id="inputInvoice" placeholder="Invoice" autocomplete="off" style="flex:1;">
+                    <button type="button" class="btn-scan" id="scanInvoiceBtn" title="Scan barcode invoice">
+                        <i class="bx bx-scan"></i>
+                    </button>
+                </div>
                 <input type="date" id="inputTanggal">
                 <div class="cd-wrapper" id="cdSupplier">
                     <div class="cd-input-row">
