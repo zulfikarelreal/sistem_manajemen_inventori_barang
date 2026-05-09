@@ -409,6 +409,36 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
     background-color: rgb(210,220,240); border-color: rgb(16,44,168);
 }
 
+/* ===== TAMBAHKAN KE BAGIAN BAWAH inputBarang.css ===== */
+
+/* Scan status bar di tab Scan */
+.scan-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+.scan-status-bar[data-state="loading"]  { background: #fffbe6; border: 1px solid #ffc107; color: #7a5c00; }
+.scan-status-bar[data-state="scanning"] { background: #e8f4ff; border: 1px solid #5b9cff; color: #1a3c8c; }
+.scan-status-bar[data-state="error"]    { background: #fff0f0; border: 1px solid #ff7070; color: #cc2222; }
+.scan-status-bar i { font-size: 15px !important; flex-shrink: 0; }
+
+/* Spinner */
+.spin {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #ffc10744;
+    border-top-color: #ffc107;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: doSpin 0.7s linear infinite;
+}
+@keyframes doSpin { to { transform: rotate(360deg); } }
+
 /* ===== ERROR & ACTIONS ===== */
 .error-msg {
     font-size: 12px; color: #cc2222; text-align: center; min-height: 16px;

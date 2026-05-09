@@ -1,12 +1,11 @@
-// ===== AUTH =====
+// ===== INPUTBARANG.JS — REVISI: Scanner stabil, no hang =====
+
 const loggedUser =
   (typeof window.loggedUser !== "undefined" && window.loggedUser) ||
   localStorage.getItem("loggedUser") ||
   "Admin";
 
-if (!localStorage.getItem("isLoggedIn")) {
-  window.location.href = "login.html";
-}
+if (!localStorage.getItem("isLoggedIn")) window.location.href = "login.html";
 
 // ===== USER INFO =====
 document.getElementById("sidebarUsername").textContent = loggedUser;
@@ -36,10 +35,70 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
 });
 
 // ===== STATE =====
-let allInvoices = {}; // cache semua invoices
+let allInvoices = {};
 let rowToDelete = null;
-let cameraStream = null;
 let currentTab = "manual";
+
+// ========================================================
+// ===== SCANNER STATE — strict lifecycle =================
+// ========================================================
+const INV_SCAN = {
+  stream: null,
+  reader: null,
+  active: false,
+  done: false,
+};
+
+// ===== ZXING LOADER — load sekali =====
+let zxingLoadPromise = null;
+function loadZXing() {
+  if (window.ZXing) return Promise.resolve();
+  if (zxingLoadPromise) return zxingLoadPromise;
+  zxingLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src =
+      "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+    s.onload = resolve;
+    s.onerror = () => {
+      zxingLoadPromise = null;
+      reject(new Error("ZXing gagal dimuat"));
+    };
+    document.head.appendChild(s);
+  });
+  return zxingLoadPromise;
+}
+
+// ===== STOP SCANNER — paksa bersih =====
+function stopInvScanner() {
+  INV_SCAN.active = false;
+  INV_SCAN.done = false;
+
+  if (INV_SCAN.reader) {
+    try {
+      INV_SCAN.reader.reset();
+    } catch (_) {}
+    INV_SCAN.reader = null;
+  }
+  if (INV_SCAN.stream) {
+    try {
+      INV_SCAN.stream.getTracks().forEach((t) => t.stop());
+    } catch (_) {}
+    INV_SCAN.stream = null;
+  }
+
+  const video = document.getElementById("cameraStream");
+  if (video) {
+    try {
+      video.pause();
+      video.srcObject = null;
+    } catch (_) {}
+  }
+
+  const ph = document.getElementById("scanPlaceholder");
+  if (ph) ph.style.display = "flex";
+
+  setScanStatus("");
+}
 
 // ===== ELEMEN =====
 const modalOverlay = document.getElementById("modalOverlay");
@@ -56,17 +115,16 @@ const ddSupplierScan = new CustomDropdown("cdSupplierScan", "supplier", {
   icon: "bx-store",
 });
 
-// ===== FORMAT RUPIAH =====
+// ===== FORMAT =====
 function formatRp(num) {
   if (!num || num === 0) return "Rp 0";
   return "Rp " + parseInt(num).toLocaleString("id-ID");
 }
 
-// ===== LINKED DATA HELPERS (sudah ada di customDropdown.js tapi kita reuse) =====
+// ===== LINKED DATA =====
 function getLinkedData() {
   try {
-    const raw = localStorage.getItem("linkedData");
-    const d = raw ? JSON.parse(raw) : {};
+    const d = JSON.parse(localStorage.getItem("linkedData") || "{}");
     return {
       supplier: d.supplier || [],
       barang: d.barang || [],
@@ -87,11 +145,23 @@ function getLinkedData() {
   }
 }
 
-// ===== DATE FILTER LOGIC =====
+function autoAddToLinkedData(key, value) {
+  if (!value) return;
+  const ex = JSON.parse(localStorage.getItem("linkedData") || "{}");
+  if (!ex[key]) ex[key] = [];
+  const exists = ex[key].some(
+    (i) => (typeof i === "string" ? i : i.nama) === value,
+  );
+  if (!exists) {
+    ex[key].push({ nama: value });
+    localStorage.setItem("linkedData", JSON.stringify(ex));
+  }
+}
+
+// ===== DATE FILTER =====
 function getDateRange(filter) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
   switch (filter) {
     case "today":
       return { from: today, to: new Date() };
@@ -104,11 +174,11 @@ function getDateRange(filter) {
       };
     case "30d":
       return { from: new Date(today - 29 * 864e5), to: new Date() };
-    case "lastmonth": {
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { from: start, to: end };
-    }
+    case "lastmonth":
+      return {
+        from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+        to: new Date(now.getFullYear(), now.getMonth(), 0),
+      };
     case "3m":
       return {
         from: new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()),
@@ -126,7 +196,7 @@ function getDateRange(filter) {
         from: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
         to: new Date(),
       };
-    default: // all
+    default:
       return null;
   }
 }
@@ -137,58 +207,49 @@ function isInRange(tanggalStr, range) {
   return d >= range.from && d <= range.to;
 }
 
-// ===== HITUNG TOTAL HARGA INVOICE =====
-// Harga diambil dari item.harga * item.stok pada invoice.items
-function hitungTotalHarga(invoiceId) {
-  const inv = allInvoices[invoiceId];
+function hitungTotalHarga(id) {
+  const inv = allInvoices[id];
   if (!inv || !inv.items) return 0;
-  return inv.items.reduce((sum, item) => {
-    const harga = parseFloat(item.harga) || 0;
-    const stok = parseInt(item.stok) || 0;
-    return sum + harga * stok;
-  }, 0);
+  return inv.items.reduce(
+    (sum, item) =>
+      sum +
+      (parseFloat(item.hargaHPP || item.harga) || 0) *
+        (parseInt(item.stok) || 0),
+    0,
+  );
 }
 
 // ===== RENDER TABLE =====
 function renderTable() {
-  const filter = filterWaktu.value;
-  const range = getDateRange(filter);
-  const list = Object.values(allInvoices);
-  const filtered = list.filter((inv) => isInRange(inv.tanggal, range));
+  const range = getDateRange(filterWaktu.value);
+  const filtered = Object.values(allInvoices).filter((inv) =>
+    isInRange(inv.tanggal, range),
+  );
 
-  // Summary
-  const totalTransaksi = filtered.length;
-  const totalBarang = filtered.reduce(
+  document.getElementById("sumTransaksi").textContent = filtered.length;
+  document.getElementById("sumBarang").textContent = filtered.reduce(
     (s, inv) => s + (parseInt(inv.total) || 0),
     0,
   );
-  const totalHarga = filtered.reduce(
-    (s, inv) => s + hitungTotalHarga(inv.invoice),
-    0,
+  document.getElementById("sumHarga").textContent = formatRp(
+    filtered.reduce((s, inv) => s + hitungTotalHarga(inv.invoice), 0),
   );
 
-  document.getElementById("sumTransaksi").textContent = totalTransaksi;
-  document.getElementById("sumBarang").textContent = totalBarang;
-  document.getElementById("sumHarga").textContent = formatRp(totalHarga);
-
-  // Table
   tableBody.innerHTML = "";
-  if (filtered.length === 0) {
+  if (!filtered.length) {
     tableBody.innerHTML = `<tr class="empty-row"><td colspan="7">Tidak ada data untuk periode ini</td></tr>`;
     return;
   }
-
   filtered.forEach((data, idx) => {
     const tr = document.createElement("tr");
     tr.dataset.invoiceId = data.invoice;
-    const totalH = hitungTotalHarga(data.invoice);
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td><a class="invoice-link" href="invoice.html?id=${encodeURIComponent(data.invoice)}">${data.invoice}</a></td>
       <td>${data.tanggal}</td>
       <td>${data.supplier}</td>
       <td class="col-total">${data.total || 0}</td>
-      <td class="col-harga">${formatRp(totalH)}</td>
+      <td class="col-harga">${formatRp(hitungTotalHarga(data.invoice))}</td>
       <td><button class="btn-hapus"><i class="bx bx-trash"></i> Hapus</button></td>
     `;
     tr.querySelector(".btn-hapus").addEventListener("click", () => {
@@ -199,19 +260,15 @@ function renderTable() {
   });
 }
 
-// ===== FILTER CHANGE =====
 filterWaktu.addEventListener("change", renderTable);
 
 // ===== BUKA MODAL =====
 document.getElementById("openModalBtn").addEventListener("click", () => {
   ddSupplier.refresh();
   ddSupplierScan.refresh();
-  document.getElementById("inputTanggal").value = new Date()
-    .toISOString()
-    .split("T")[0];
-  document.getElementById("inputTanggalScan").value = new Date()
-    .toISOString()
-    .split("T")[0];
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("inputTanggal").value = today;
+  document.getElementById("inputTanggalScan").value = today;
   errorMsg.textContent = "";
   modalOverlay.classList.add("active");
   switchTab("manual");
@@ -236,78 +293,131 @@ window.switchTab = function (tab) {
     .getElementById("tabManual")
     .classList.toggle("active", tab === "manual");
   document.getElementById("tabScan").classList.toggle("active", tab === "scan");
-
-  if (tab !== "scan" && cameraStream) {
-    cameraStream.getTracks().forEach((t) => t.stop());
-    cameraStream = null;
-    document.getElementById("cameraStream").srcObject = null;
-    document.getElementById("scanPlaceholder").style.display = "flex";
-  }
+  // Jika keluar dari tab scan, stop kamera
+  if (tab !== "scan") stopInvScanner();
 };
 
-// ===== KAMERA =====
+// ===== KAMERA — ZXing =====
 document.getElementById("btnOpenCam").addEventListener("click", async () => {
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-    });
-    const video = document.getElementById("cameraStream");
-    video.srcObject = cameraStream;
-    document.getElementById("scanPlaceholder").style.display = "none";
+  stopInvScanner(); // bersihkan sesi lama
+  setScanStatus("loading", "Memuat scanner...");
 
-    // Simulasi scan (di production gunakan library QuaggaJS atau ZXing)
-    setTimeout(() => simulateScan(), 3000);
+  try {
+    await loadZXing();
+
+    const reader = new ZXing.BrowserMultiFormatReader();
+    INV_SCAN.reader = reader;
+    INV_SCAN.done = false;
+
+    const video = document.getElementById("cameraStream");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    });
+    INV_SCAN.stream = stream;
+    INV_SCAN.active = true;
+    video.srcObject = stream;
+
+    document.getElementById("scanPlaceholder").style.display = "none";
+    setScanStatus("scanning", "Arahkan ke barcode invoice...");
+
+    reader.decodeFromStream(stream, video, (result, err) => {
+      if (INV_SCAN.done || !INV_SCAN.active) return;
+
+      if (result) {
+        INV_SCAN.done = true;
+        showScanResult(result.getText());
+        stopInvScanner();
+      }
+      // NotFoundException — abaikan
+    });
   } catch (err) {
-    alert("Tidak bisa mengakses kamera: " + err.message);
+    stopInvScanner();
+    const msg =
+      err.message.includes("Permission") || err.message.includes("getUserMedia")
+        ? "Izin kamera ditolak."
+        : "Kamera gagal: " + err.message;
+    setScanStatus("error", msg);
   }
 });
 
-// Pilih dari galeri
+// ===== GALLERY — ZXing decode gambar =====
 document
   .getElementById("galleryInput")
-  .addEventListener("change", function (e) {
+  .addEventListener("change", async function (e) {
     const file = e.target.files[0];
     if (!file) return;
+    this.value = "";
+    setScanStatus("loading", "Membaca barcode dari gambar...");
 
-    const reader = new FileReader();
-    reader.onload = function (ev) {
-      // Di sini normalnya kita decode barcode dari gambar
-      // Simulasi: ambil nama file sebagai "barcode" untuk demo
-      const fakeScan = Date.now().toString().slice(-6);
-      showScanResult(fakeScan);
-    };
-    reader.readAsDataURL(file);
+    try {
+      await loadZXing();
+      const reader = new ZXing.BrowserMultiFormatReader();
+      const url = URL.createObjectURL(file);
+      try {
+        const result = await reader.decodeFromImageUrl(url);
+        showScanResult(result.getText());
+        setScanStatus("");
+      } catch (_) {
+        setScanStatus(
+          "error",
+          "Barcode tidak terbaca. Coba gambar lebih jelas.",
+        );
+      } finally {
+        try {
+          reader.reset();
+        } catch (_) {}
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setScanStatus("error", "Error: " + err.message);
+    }
   });
-
-function simulateScan() {
-  // Simulasi hasil scan barcode — di production gunakan ZXing/Quagga
-  const fakeScan = Date.now().toString().slice(-6);
-  showScanResult(fakeScan);
-  if (cameraStream) {
-    cameraStream.getTracks().forEach((t) => t.stop());
-    cameraStream = null;
-  }
-}
 
 function showScanResult(value) {
   document.getElementById("scanResultVal").textContent = value;
   document.getElementById("scanResult").style.display = "flex";
-  document.getElementById("cameraStream").srcObject = null;
-  document.getElementById("scanPlaceholder").style.display = "flex";
 }
 
 document.getElementById("btnUseScan").addEventListener("click", () => {
   const val = document.getElementById("scanResultVal").textContent;
   document.getElementById("inputInvoiceScan").value = val;
   document.getElementById("scanResult").style.display = "none";
+  setScanStatus("");
 });
+
+function setScanStatus(state, msg = "") {
+  let el = document.getElementById("scanStatusInvoice");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "scanStatusInvoice";
+    el.className = "scan-status-bar";
+    const scanActions = document.querySelector("#panelScan .scan-actions");
+    if (scanActions) scanActions.insertAdjacentElement("afterend", el);
+    else return;
+  }
+  if (!state) {
+    el.style.display = "none";
+    return;
+  }
+  el.style.display = "flex";
+  el.setAttribute("data-state", state);
+  el.innerHTML =
+    state === "loading"
+      ? `<span class="spin"></span><span>${msg}</span>`
+      : state === "scanning"
+        ? `<i class="bx bx-barcode-reader"></i><span>${msg}</span>`
+        : `<i class="bx bx-error-circle"></i><span>${msg}</span>`;
+}
 
 // ===== SIMPAN =====
 document.getElementById("simpanBtn").addEventListener("click", simpanData);
 
 function simpanData() {
   let invoice, tanggal, supplier;
-
   if (currentTab === "manual") {
     invoice = document.getElementById("inputInvoice").value.trim();
     tanggal = document.getElementById("inputTanggal").value;
@@ -329,9 +439,7 @@ function simpanData() {
     return;
   }
 
-  // Auto-add supplier ke linkedData
   autoAddToLinkedData("supplier", supplier);
-
   invoices[invoice] = {
     invoice,
     tanggal,
@@ -371,28 +479,31 @@ confirmOverlay.addEventListener("click", (e) => {
 
 // ===== TUTUP MODAL =====
 function tutupModal() {
+  // PENTING: stop scanner sebelum tutup
+  stopInvScanner();
   modalOverlay.classList.remove("active");
   errorMsg.textContent = "";
   document.getElementById("inputInvoice").value = "";
   document.getElementById("inputTanggal").value = "";
   document.getElementById("inputInvoiceScan").value = "";
   document.getElementById("inputTanggalScan").value = "";
+  document.getElementById("scanResult").style.display = "none";
   ddSupplier.clear();
   ddSupplierScan.clear();
-  document.getElementById("scanResult").style.display = "none";
-  if (cameraStream) {
-    cameraStream.getTracks().forEach((t) => t.stop());
-    cameraStream = null;
-  }
-  document.getElementById("scanPlaceholder").style.display = "flex";
 }
 
-// ===== SYNC TOTAL (dari invoice.js saat kembali) =====
-window.addEventListener("focus", syncTotals);
-function syncTotals() {
+// ===== SYNC =====
+window.addEventListener("focus", () => {
   allInvoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   renderTable();
-}
+});
+
+// ===== SAFETY NET =====
+window.addEventListener("beforeunload", () => stopInvScanner());
+window.addEventListener("pagehide", () => stopInvScanner());
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") stopInvScanner();
+});
 
 // ===== INIT =====
 allInvoices = JSON.parse(localStorage.getItem("invoices") || "{}");

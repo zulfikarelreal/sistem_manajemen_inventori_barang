@@ -1,3 +1,5 @@
+// ===== INVOICE.JS — REVISI: Scanner stabil, no hang =====
+
 const params = new URLSearchParams(window.location.search);
 const invoiceId = params.get("id");
 const backBtn = document.getElementById("backBtn");
@@ -21,48 +23,104 @@ const autofillNotice = document.getElementById("autofillNotice");
 
 let rowCount = 0;
 let rowToDelete = null;
-let cameraStreamSKU = null;
-let cameraStreamExpired = null;
-let scanLoopSKU = null;
-let scanLoopExpired = null;
 
 // ========================================================
-// ===== LOAD ZXING (lazy) ================================
+// ===== SCANNER STATE — satu tempat, strict lifecycle ====
 // ========================================================
-let ZXingReader = null;
-async function getZXingReader() {
-  if (ZXingReader) return ZXingReader;
-  if (!window.ZXing) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src =
-        "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("Gagal memuat ZXing"));
-      document.head.appendChild(s);
-    });
-  }
-  ZXingReader = new ZXing.BrowserMultiFormatReader();
-  return ZXingReader;
+const SKU_SCAN = {
+  stream: null,
+  reader: null,
+  active: false, // flag: apakah sedang decode
+  done: false, // flag: sudah dapat hasil, abaikan callback lanjutan
+};
+
+// ===== ZXING LOADER — load sekali, cache di window =====
+let zxingLoadPromise = null;
+function loadZXing() {
+  if (window.ZXing) return Promise.resolve();
+  if (zxingLoadPromise) return zxingLoadPromise;
+  zxingLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src =
+      "https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+    s.onload = resolve;
+    s.onerror = () => {
+      zxingLoadPromise = null;
+      reject(new Error("ZXing gagal dimuat"));
+    };
+    document.head.appendChild(s);
+  });
+  return zxingLoadPromise;
 }
 
-// ========================================================
-// ===== LOAD TESSERACT (lazy) ============================
-// ========================================================
-let tesseractReady = false;
-async function loadTesseract() {
-  if (tesseractReady) return;
-  if (!window.Tesseract) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src =
-        "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("Gagal memuat Tesseract"));
-      document.head.appendChild(s);
-    });
+// ===== STOP SCANNER — paksa bersih =====
+function stopSKUScanner() {
+  SKU_SCAN.active = false;
+  SKU_SCAN.done = false;
+
+  // 1. Reset reader (tangkap error)
+  if (SKU_SCAN.reader) {
+    try {
+      SKU_SCAN.reader.reset();
+    } catch (_) {}
+    SKU_SCAN.reader = null;
   }
-  tesseractReady = true;
+
+  // 2. Stop semua track kamera
+  if (SKU_SCAN.stream) {
+    try {
+      SKU_SCAN.stream.getTracks().forEach((t) => t.stop());
+    } catch (_) {}
+    SKU_SCAN.stream = null;
+  }
+
+  // 3. Bersihkan video
+  const video = document.getElementById("cameraStreamSKU");
+  if (video) {
+    try {
+      video.pause();
+      video.srcObject = null;
+    } catch (_) {}
+  }
+
+  // 4. Kembalikan placeholder
+  const ph = document.getElementById("scanPlaceholderSKU");
+  if (ph) ph.style.display = "flex";
+
+  setSKUScanStatus("");
+}
+
+function closeSKUPanel() {
+  stopSKUScanner();
+  const panel = document.getElementById("scannerSKUPanel");
+  if (panel) panel.classList.add("hidden");
+  const resultEl = document.getElementById("scanResultSKU");
+  if (resultEl) resultEl.classList.add("hidden");
+}
+
+// ===== STATUS INDICATOR =====
+function setSKUScanStatus(state, msg = "") {
+  let el = document.getElementById("skuScanStatus");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "skuScanStatus";
+    el.className = "scan-status";
+    const panel = document.getElementById("scannerSKUPanel");
+    if (panel) panel.appendChild(el);
+    else return;
+  }
+  if (!state) {
+    el.style.display = "none";
+    return;
+  }
+  el.style.display = "flex";
+  el.setAttribute("data-state", state);
+  el.innerHTML =
+    state === "loading"
+      ? `<span class="spin"></span><span>${msg}</span>`
+      : state === "scanning"
+        ? `<i class="bx bx-scan"></i><span>${msg}</span>`
+        : `<i class="bx bx-error-circle"></i><span>${msg}</span>`;
 }
 
 // ===== DROPDOWNS =====
@@ -74,13 +132,13 @@ const ddMerk = new CustomDropdown("cdMerk", "merk", {
   icon: "bx-purchase-tag",
 });
 
-// ===== FORMAT RP =====
+// ===== FORMAT =====
 function formatRp(num) {
   if (!num || num === 0) return "Rp 0";
   return "Rp " + parseInt(num).toLocaleString("id-ID");
 }
 
-// ===== LINKED DATA HELPERS =====
+// ===== LINKED DATA =====
 function getLinkedData() {
   try {
     const d = JSON.parse(localStorage.getItem("linkedData") || "{}");
@@ -108,28 +166,32 @@ function getLinkedData() {
 
 function autoAddToLinkedData(key, value) {
   if (!value || value === "-") return;
-  const existing = JSON.parse(localStorage.getItem("linkedData") || "{}");
-  if (!existing[key]) existing[key] = [];
-  if (!existing[key].includes(value)) {
-    existing[key].push(value);
-    localStorage.setItem("linkedData", JSON.stringify(existing));
+  const ex = JSON.parse(localStorage.getItem("linkedData") || "{}");
+  if (!ex[key]) ex[key] = [];
+  // support both array-of-strings and array-of-objects
+  const exists = ex[key].some(
+    (i) => (typeof i === "string" ? i : i.nama) === value,
+  );
+  if (!exists) {
+    ex[key].push({ nama: value });
+    localStorage.setItem("linkedData", JSON.stringify(ex));
   }
 }
 
-function autoAddSKUToLinkedData(skuObj) {
-  const existing = JSON.parse(localStorage.getItem("linkedData") || "{}");
-  if (!existing.sku) existing.sku = [];
-  const idx = existing.sku.findIndex((s) => s.sku === skuObj.sku);
-  if (idx === -1) existing.sku.push(skuObj);
-  else existing.sku[idx] = skuObj;
-  localStorage.setItem("linkedData", JSON.stringify(existing));
+function autoAddSKUToLinkedData(obj) {
+  const ex = JSON.parse(localStorage.getItem("linkedData") || "{}");
+  if (!ex.sku) ex.sku = [];
+  const idx = ex.sku.findIndex((s) => s.sku === obj.sku);
+  if (idx === -1) ex.sku.push(obj);
+  else ex.sku[idx] = obj;
+  localStorage.setItem("linkedData", JSON.stringify(ex));
 }
 
 function findSKUInLinkedData(sku) {
   return (getLinkedData().sku || []).find((s) => s.sku === sku) || null;
 }
 
-// ===== GLOBAL STOCK SYNC =====
+// ===== GLOBAL STOCK =====
 function syncToGlobalStock(item) {
   const gs = JSON.parse(localStorage.getItem("globalStock") || "{}");
   const key = item.sku || item.nama;
@@ -164,7 +226,7 @@ function removeFromGlobalStock(item) {
   }
 }
 
-// ===== PREVIEW SUBTOTAL =====
+// ===== SUBTOTAL PREVIEW =====
 function updateSubtotalPreview() {
   subtotalVal.textContent = formatRp(
     (parseInt(inputStok.value) || 0) * (parseFloat(inputHargaHPP.value) || 0),
@@ -174,23 +236,13 @@ inputStok.addEventListener("input", updateSubtotalPreview);
 inputHargaHPP.addEventListener("input", updateSubtotalPreview);
 
 // ===== SKU AUTOFILL =====
-document.getElementById("inputSKU").addEventListener("blur", function () {
-  handleSKULookup(this.value.trim());
-});
-document.getElementById("inputSKU").addEventListener("keydown", function (e) {
-  if (e.key === "Enter") handleSKULookup(this.value.trim());
-});
-
 function handleSKULookup(sku) {
   if (!sku) return;
   const found = findSKUInLinkedData(sku);
   if (found) {
-    document.getElementById("inputNama").value = found.nama || "";
-    document.getElementById("inputMerk").value = found.merk || "";
-    document.getElementById("inputKategori").value = found.kategori || "";
-    if (ddNama.setValue) ddNama.setValue(found.nama || "");
-    if (ddMerk.setValue) ddMerk.setValue(found.merk || "");
-    if (ddKategori.setValue) ddKategori.setValue(found.kategori || "");
+    ddNama.setValue(found.nama || "");
+    ddMerk.setValue(found.merk || "");
+    ddKategori.setValue(found.kategori || "");
     autofillNotice.classList.remove("hidden");
     inputStok.focus();
   } else {
@@ -198,471 +250,138 @@ function handleSKULookup(sku) {
   }
 }
 
-// ========================================================
-// ===== SCANNER SKU — ZXing ==============================
-// ========================================================
-
-document.getElementById("btnScanSKU").addEventListener("click", () => {
-  document.getElementById("scannerSKUPanel").classList.toggle("hidden");
+document.getElementById("inputSKU").addEventListener("blur", function () {
+  handleSKULookup(this.value.trim());
 });
-document
-  .getElementById("btnCloseScannerSKU")
-  .addEventListener("click", () => closeScanner("SKU"));
+document.getElementById("inputSKU").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") handleSKULookup(this.value.trim());
+});
 
-document
-  .getElementById("btnOpenCamSKU")
-  .addEventListener("click", () => startCameraBarcode("SKU"));
+// ===== TOGGLE SCANNER PANEL =====
+document.getElementById("btnScanSKU").addEventListener("click", () => {
+  const panel = document.getElementById("scannerSKUPanel");
+  if (panel.classList.contains("hidden")) {
+    panel.classList.remove("hidden");
+  } else {
+    closeSKUPanel();
+  }
+});
 
+document.getElementById("btnCloseScannerSKU").addEventListener("click", () => {
+  closeSKUPanel();
+});
+
+// ===== BUKA KAMERA — ZXing =====
+document.getElementById("btnOpenCamSKU").addEventListener("click", async () => {
+  // Stop sesi lama dulu, selalu
+  stopSKUScanner();
+  setSKUScanStatus("loading", "Memuat scanner...");
+
+  try {
+    await loadZXing();
+
+    // Buat reader BARU setiap kali
+    const reader = new ZXing.BrowserMultiFormatReader();
+    SKU_SCAN.reader = reader;
+    SKU_SCAN.done = false;
+
+    const video = document.getElementById("cameraStreamSKU");
+
+    // Minta stream kamera
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment",
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+    });
+    SKU_SCAN.stream = stream;
+    SKU_SCAN.active = true;
+    video.srcObject = stream;
+
+    document.getElementById("scanPlaceholderSKU").style.display = "none";
+    setSKUScanStatus("scanning", "Arahkan ke barcode SKU produk...");
+
+    // decodeFromStream — callback terus sampai di-reset
+    reader.decodeFromStream(stream, video, (result, err) => {
+      // Abaikan callback setelah done atau tidak aktif
+      if (SKU_SCAN.done || !SKU_SCAN.active) return;
+
+      if (result) {
+        SKU_SCAN.done = true; // tandai agar callback berikutnya diabaikan
+        const text = result.getText();
+
+        // Tampilkan hasil
+        document.getElementById("scanResultValSKU").textContent = text;
+        document.getElementById("scanResultSKU").classList.remove("hidden");
+        setSKUScanStatus("");
+
+        // Stop kamera setelah dapat hasil
+        stopSKUScanner();
+      }
+      // err NotFoundException — normal, abaikan
+    });
+  } catch (err) {
+    stopSKUScanner();
+    const msg =
+      err.message.includes("getUserMedia") || err.message.includes("Permission")
+        ? "Izin kamera ditolak. Izinkan akses kamera di browser."
+        : err.message.includes("ZXing") || err.message.includes("dimuat")
+          ? "Gagal memuat library scanner. Cek koneksi internet."
+          : "Kamera gagal: " + err.message;
+    setSKUScanStatus("error", msg);
+  }
+});
+
+// ===== UPLOAD GAMBAR — ZXing decode dari file =====
 document
   .getElementById("galleryInputSKU")
   .addEventListener("change", async function (e) {
     const file = e.target.files[0];
     if (!file) return;
-    await decodeImageBarcode(file, "SKU");
-    this.value = "";
+    this.value = ""; // reset input agar bisa upload ulang file yang sama
+    setSKUScanStatus("loading", "Membaca barcode dari gambar...");
+
+    try {
+      await loadZXing();
+
+      // Buat reader baru khusus untuk decode gambar
+      const reader = new ZXing.BrowserMultiFormatReader();
+      const url = URL.createObjectURL(file);
+
+      try {
+        const result = await reader.decodeFromImageUrl(url);
+        document.getElementById("scanResultValSKU").textContent =
+          result.getText();
+        document.getElementById("scanResultSKU").classList.remove("hidden");
+        setSKUScanStatus("");
+      } catch (_) {
+        setSKUScanStatus(
+          "error",
+          "Barcode tidak terbaca. Coba foto lebih dekat & kontras.",
+        );
+      } finally {
+        // Selalu cleanup
+        try {
+          reader.reset();
+        } catch (_) {}
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      setSKUScanStatus("error", "Error: " + err.message);
+    }
   });
 
+// ===== GUNAKAN HASIL SCAN =====
 document.getElementById("btnUseScanSKU").addEventListener("click", () => {
   const val = document.getElementById("scanResultValSKU").textContent;
   document.getElementById("inputSKU").value = val;
   document.getElementById("scanResultSKU").classList.add("hidden");
-  closeScanner("SKU");
+  closeSKUPanel();
   handleSKULookup(val);
 });
 
-// ========================================================
-// ===== SCANNER EXPIRED — ZXing + Tesseract ==============
-// ========================================================
-
-document.getElementById("btnScanExpired").addEventListener("click", () => {
-  document.getElementById("scannerExpiredPanel").classList.toggle("hidden");
-});
-document
-  .getElementById("btnCloseScannerExpired")
-  .addEventListener("click", () => closeScanner("Expired"));
-
-document
-  .getElementById("btnOpenCamExpired")
-  .addEventListener("click", () => startCameraExpired());
-
-document
-  .getElementById("galleryInputExpired")
-  .addEventListener("change", async function (e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    await decodeImageExpired(file);
-    this.value = "";
-  });
-
-document.getElementById("btnUseScanExpired").addEventListener("click", () => {
-  const val = document.getElementById("scanResultValExpired").textContent;
-  const parsed = parseExpiredDate(val);
-  if (parsed) {
-    document.getElementById("inputExpired").value = parsed;
-  } else {
-    alert(`Tanggal terdeteksi: "${val}"\nSilakan koreksi manual jika perlu.`);
-  }
-  document.getElementById("scanResultExpired").classList.add("hidden");
-  closeScanner("Expired");
-});
-
-// ========================================================
-// ===== KAMERA + ZXing continuous decode =================
-// ========================================================
-
-async function startCameraBarcode(type) {
-  setScanStatus(type, "loading", "Memuat scanner...");
-  try {
-    const reader = await getZXingReader();
-    const video = document.getElementById(`cameraStream${type}`);
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    });
-    video.srcObject = stream;
-    if (type === "SKU") cameraStreamSKU = stream;
-    else cameraStreamExpired = stream;
-    document.getElementById(`scanPlaceholder${type}`).style.display = "none";
-    setScanStatus(type, "scanning", "Arahkan ke barcode...");
-
-    // ZXing terus-menerus decode dari stream
-    reader.decodeFromStream(stream, video, (result, err) => {
-      if (result) {
-        showScanResult(type, result.getText());
-        stopScanLoop(type);
-        stopCamera(type);
-        setScanStatus(type, "");
-      }
-      // NotFoundException diabaikan — normal saat belum ada barcode di frame
-    });
-    if (type === "SKU") scanLoopSKU = reader;
-    else scanLoopExpired = reader;
-  } catch (err) {
-    setScanStatus(type, "error", "Kamera gagal: " + err.message);
-  }
-}
-
-async function startCameraExpired() {
-  setScanStatus("Expired", "loading", "Memuat scanner...");
-  try {
-    const reader = await getZXingReader();
-    const video = document.getElementById("cameraStreamExpired");
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-    });
-    video.srcObject = stream;
-    cameraStreamExpired = stream;
-    document.getElementById("scanPlaceholderExpired").style.display = "none";
-    setScanStatus(
-      "Expired",
-      "scanning",
-      "Arahkan ke barcode expired, atau ambil gambar untuk OCR...",
-    );
-
-    // Coba decode barcode yang memuat tanggal
-    reader.decodeFromStream(stream, video, (result, err) => {
-      if (result) {
-        const parsed =
-          parseExpiredDate(result.getText()) ||
-          extractExpiredFromOCR(result.getText());
-        if (parsed) {
-          showScanResult("Expired", parsed);
-          stopScanLoop("Expired");
-          stopCamera("Expired");
-          setScanStatus("Expired", "");
-          removeCaptureBtn();
-        }
-      }
-    });
-    scanLoopExpired = reader;
-
-    // Tambahkan tombol capture untuk OCR
-    addCaptureBtn(stream, video);
-  } catch (err) {
-    setScanStatus("Expired", "error", "Kamera gagal: " + err.message);
-  }
-}
-
-// Tombol ambil gambar lalu OCR
-function addCaptureBtn(stream, video) {
-  removeCaptureBtn();
-  const btn = document.createElement("button");
-  btn.id = "btnCaptureOCR";
-  btn.className = "btn-cam";
-  btn.style.cssText = "margin-top:6px; width:100%;";
-  btn.innerHTML = '<i class="bx bx-camera"></i> Ambil Gambar & Baca Expired';
-  btn.onclick = async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    const blob = await new Promise((res) =>
-      canvas.toBlob(res, "image/jpeg", 0.95),
-    );
-    const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
-    await decodeImageExpired(file);
-  };
-  const panel = document.getElementById("scannerExpiredPanel");
-  panel.querySelector(".scan-actions").insertAdjacentElement("afterend", btn);
-}
-
-function removeCaptureBtn() {
-  const b = document.getElementById("btnCaptureOCR");
-  if (b) b.remove();
-}
-
-// ========================================================
-// ===== DECODE DARI GAMBAR (Gallery upload) ==============
-// ========================================================
-
-async function decodeImageBarcode(file, type) {
-  setScanStatus(type, "loading", "Membaca barcode dari gambar...");
-  try {
-    const reader = await getZXingReader();
-    const url = URL.createObjectURL(file);
-    try {
-      const result = await reader.decodeFromImageUrl(url);
-      showScanResult(type, result.getText());
-      setScanStatus(type, "");
-    } catch {
-      setScanStatus(
-        type,
-        "error",
-        "Barcode tidak terbaca. Coba gambar lebih jelas.",
-      );
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  } catch (err) {
-    setScanStatus(type, "error", "Error: " + err.message);
-  }
-}
-
-async function decodeImageExpired(file) {
-  setScanStatus("Expired", "loading", "Membaca dari gambar...");
-  const url = URL.createObjectURL(file);
-  let found = false;
-
-  // 1. Coba ZXing barcode decode
-  try {
-    const reader = await getZXingReader();
-    const result = await reader.decodeFromImageUrl(url);
-    const text = result.getText();
-    const parsed = parseExpiredDate(text) || extractExpiredFromOCR(text);
-    if (parsed) {
-      showScanResult("Expired", parsed);
-      setScanStatus("Expired", "");
-      found = true;
-    }
-  } catch {
-    /* tidak ada barcode — lanjut ke OCR */
-  }
-
-  // 2. Fallback Tesseract OCR
-  if (!found) {
-    const blob = await fetch(url).then((r) => r.blob());
-    await ocrExpiredFromBlob(blob);
-  }
-
-  URL.revokeObjectURL(url);
-}
-
-// ========================================================
-// ===== OCR dengan Tesseract.js ==========================
-// ========================================================
-
-async function ocrExpiredFromBlob(blob) {
-  setScanStatus("Expired", "loading", "OCR — membaca teks tanggal...");
-  try {
-    await loadTesseract();
-
-    const worker = await Tesseract.createWorker("eng", 1, {
-      logger: (m) => {
-        if (m.status === "recognizing text") {
-          const pct = Math.round((m.progress || 0) * 100);
-          setScanStatus("Expired", "loading", `OCR ${pct}%...`);
-        }
-      },
-    });
-
-    // Set whitelist karakter agar lebih akurat & cepat
-    await worker.setParameters({
-      tessedit_char_whitelist:
-        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/-.() ",
-    });
-
-    const {
-      data: { text },
-    } = await worker.recognize(blob);
-    await worker.terminate();
-
-    const parsed = extractExpiredFromOCR(text);
-    if (parsed) {
-      showScanResult("Expired", parsed);
-      setScanStatus("Expired", "");
-    } else {
-      const clean = text
-        .replace(/\n/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 100);
-      setScanStatus("Expired", "error", `Teks: "${clean}"`);
-      showScanResult("Expired", clean || "Tidak terbaca");
-    }
-  } catch (err) {
-    setScanStatus("Expired", "error", "OCR gagal: " + err.message);
-  }
-}
-
-// ========================================================
-// ===== EKSTRAK TANGGAL DARI TEKS OCR ====================
-// ========================================================
-
-function extractExpiredFromOCR(raw) {
-  if (!raw) return null;
-  // Normalisasi noise OCR
-  const text = raw
-    .replace(/[Oo]/g, "0")
-    .replace(/[Il|]/g, "1")
-    .replace(/\s+/g, " ")
-    .toUpperCase();
-
-  // Bulan lookup
-  const MONTHS = {
-    JAN: 1,
-    FEB: 2,
-    MAR: 3,
-    APR: 4,
-    MAY: 5,
-    MEI: 5,
-    JUN: 6,
-    JUL: 7,
-    AGU: 8,
-    AUG: 8,
-    SEP: 9,
-    OKT: 10,
-    OCT: 10,
-    NOV: 11,
-    DES: 12,
-    DEC: 12,
-  };
-  const MON_RE =
-    "JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AGU|AUG|SEP|OKT|OCT|NOV|DES|DEC";
-
-  let m;
-
-  // 1. Keyword EXP / BEST BEFORE / BB / ED / KADALUARSA + tanggal
-  m = text.match(
-    new RegExp(
-      `(?:EXP(?:IRY|IRED|[\\.:])?|BEST\\s*BEFORE|B\\.?B\\.?|USE\\s+BY|ED|KADALUARSA|EXP\\.?DATE)[\\s:]*([0-9]{1,2}[/\\-\\.][0-9]{2}[/\\-\\.][0-9]{2,4})`,
-    ),
-  );
-  if (m) return parseExpiredDate(m[1]);
-
-  // 2. DD/MM/YYYY
-  m = text.match(/\b(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})\b/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-
-  // 3. DD/MM/YY
-  m = text.match(/\b(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2})\b/);
-  if (m) return `20${m[3]}-${m[2]}-${m[1]}`;
-
-  // 4. MM/YYYY
-  m = text.match(/\b(\d{2})[\/\-](\d{4})\b/);
-  if (m) return `${m[2]}-${m[1]}-01`;
-
-  // 5. ISO YYYY-MM-DD
-  m = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-
-  // 6. DD MON YYYY atau DD MON YY
-  m = text.match(new RegExp(`\\b(\\d{1,2})\\s*(${MON_RE})\\s*(\\d{2,4})\\b`));
-  if (m) {
-    const y = m[3].length === 2 ? "20" + m[3] : m[3];
-    const mo = String(MONTHS[m[2].slice(0, 3)] || 1).padStart(2, "0");
-    return `${y}-${mo}-${String(m[1]).padStart(2, "0")}`;
-  }
-
-  // 7. MON YYYY atau MON YY
-  m = text.match(new RegExp(`\\b(${MON_RE})\\s*(\\d{2,4})\\b`));
-  if (m) {
-    const y = m[2].length === 2 ? "20" + m[2] : m[2];
-    const mo = String(MONTHS[m[1].slice(0, 3)] || 1).padStart(2, "0");
-    return `${y}-${mo}-01`;
-  }
-
-  return null;
-}
-
-// ===== PARSE EXPIRED DATE DARI STRING SINGKAT ===========
-function parseExpiredDate(val) {
-  if (!val) return null;
-  val = val.trim().replace(/[Oo]/g, "0");
-
-  // ISO
-  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-
-  // DD/MM/YYYY
-  let m = val.match(/^(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})$/);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-
-  // DD/MM/YY
-  m = val.match(/^(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2})$/);
-  if (m) return `20${m[3]}-${m[2]}-${m[1]}`;
-
-  // DDMMYYYY
-  if (/^\d{8}$/.test(val))
-    return `${val.slice(4)}-${val.slice(2, 4)}-${val.slice(0, 2)}`;
-
-  // MM/YYYY
-  m = val.match(/^(\d{2})[\/\-](\d{4})$/);
-  if (m) return `${m[2]}-${m[1]}-01`;
-
-  // MMYYYY
-  if (/^\d{6}$/.test(val)) return `20${val.slice(4)}-${val.slice(0, 2)}-01`;
-
-  return null;
-}
-
-// ========================================================
-// ===== SCANNER HELPERS ==================================
-// ========================================================
-
-function stopScanLoop(type) {
-  const loop = type === "SKU" ? scanLoopSKU : scanLoopExpired;
-  if (loop) {
-    try {
-      loop.reset();
-    } catch {}
-  }
-  if (type === "SKU") scanLoopSKU = null;
-  else scanLoopExpired = null;
-}
-
-function stopCamera(type) {
-  const stream = type === "SKU" ? cameraStreamSKU : cameraStreamExpired;
-  if (stream) {
-    stream.getTracks().forEach((t) => t.stop());
-    if (type === "SKU") cameraStreamSKU = null;
-    else cameraStreamExpired = null;
-    const video = document.getElementById(`cameraStream${type}`);
-    if (video) video.srcObject = null;
-  }
-}
-
-function closeScanner(type) {
-  stopScanLoop(type);
-  stopCamera(type);
-  const panel = document.getElementById(`scanner${type}Panel`);
-  if (panel) panel.classList.add("hidden");
-  const ph = document.getElementById(`scanPlaceholder${type}`);
-  if (ph) ph.style.display = "flex";
-  setScanStatus(type, "");
-  if (type === "Expired") removeCaptureBtn();
-}
-
-function showScanResult(type, value) {
-  document.getElementById(`scanResultVal${type}`).textContent = value;
-  document.getElementById(`scanResult${type}`).classList.remove("hidden");
-}
-
-function setScanStatus(type, state, msg = "") {
-  const panelId = `scanner${type}Panel`;
-  const statusId = `scanStatus${type}`;
-  let el = document.getElementById(statusId);
-  if (!el) {
-    el = document.createElement("div");
-    el.id = statusId;
-    el.className = "scan-status";
-    const panel = document.getElementById(panelId);
-    if (panel) panel.appendChild(el);
-    else return;
-  }
-  if (!state) {
-    el.style.display = "none";
-    return;
-  }
-  el.style.display = "flex";
-  el.setAttribute("data-state", state);
-  el.innerHTML =
-    state === "loading"
-      ? `<span class="spin"></span><span>${msg}</span>`
-      : state === "scanning"
-        ? `<i class="bx bx-scan"></i><span>${msg}</span>`
-        : `<i class="bx bx-error-circle"></i><span>${msg}</span>`;
-}
-
-// ========================================================
-// ===== INIT & RENDER ====================================
-// ========================================================
-
+// ===== INIT =====
 function init() {
   if (!invoiceId) {
     invoiceInfo.innerHTML = '<p style="color:red">Invoice tidak ditemukan.</p>';
@@ -673,7 +392,7 @@ function init() {
   const data = invoices[invoiceId];
   if (data) {
     renderInfo(data);
-    if (data.items && data.items.length > 0) {
+    if (data.items?.length) {
       itemTableBody.querySelector(".empty-row")?.remove();
       data.items.forEach((item) => tambahBaris(item, false));
     }
@@ -732,8 +451,10 @@ openTambahBtn.addEventListener("click", () => {
   ddMerk.refresh();
   subtotalVal.textContent = "Rp 0";
   autofillNotice.classList.add("hidden");
+  errorMsg.textContent = "";
   modalOverlay.classList.add("active");
 });
+
 document.getElementById("modalCloseX").addEventListener("click", tutupModal);
 batalBtn.addEventListener("click", tutupModal);
 modalOverlay.addEventListener("click", (e) => {
@@ -742,16 +463,17 @@ modalOverlay.addEventListener("click", (e) => {
 simpanBtn.addEventListener("click", simpanItem);
 
 function tutupModal() {
+  // PENTING: stop scanner sebelum tutup modal
+  closeSKUPanel();
   modalOverlay.classList.remove("active");
   clearForm();
-  closeScanner("SKU");
-  closeScanner("Expired");
 }
 
 function clearForm() {
   ["inputSKU", "inputExpired", "inputHargaHPP", "inputHargaJual"].forEach(
     (id) => {
-      document.getElementById(id).value = "";
+      const el = document.getElementById(id);
+      if (el) el.value = "";
     },
   );
   inputStok.value = "";
@@ -761,28 +483,25 @@ function clearForm() {
   ddNama.clear();
   ddKategori.clear();
   ddMerk.clear();
-  document.getElementById("scanResultSKU").classList.add("hidden");
-  document.getElementById("scanResultExpired").classList.add("hidden");
-  removeCaptureBtn();
 }
 
 function simpanItem() {
   const sku = document.getElementById("inputSKU").value.trim();
-  const nama =
-    ddNama.getValue() || document.getElementById("inputNama").value.trim();
-  const merk =
-    ddMerk.getValue() || document.getElementById("inputMerk").value.trim();
-  const kategori =
-    ddKategori.getValue() ||
-    document.getElementById("inputKategori").value.trim();
-  const expired = document.getElementById("inputExpired").value || "-";
-  const hargaHPP = document.getElementById("inputHargaHPP").value.trim();
-  const hargaJual =
-    document.getElementById("inputHargaJual").value.trim() || "0";
+  const nama = ddNama.getValue();
+  const merk = ddMerk.getValue();
+  const kategori = ddKategori.getValue();
+  const expiredEl = document.getElementById("inputExpired");
+  const expired = expiredEl ? expiredEl.value || "-" : "-";
+  const hargaHPP = inputHargaHPP.value.trim();
+  const hargaJual = inputHargaJual.value.trim() || "0";
   const stok = inputStok.value.trim();
 
   if (!sku || !nama || !merk || !kategori || !stok || !hargaHPP) {
     errorMsg.textContent = "Field bertanda * wajib diisi!";
+    return;
+  }
+  if (parseInt(stok) < 1) {
+    errorMsg.textContent = "Stok minimal 1!";
     return;
   }
 
@@ -888,8 +607,17 @@ function updateNomor() {
   }
 }
 
+// ===== BACK — stop scanner sebelum pindah halaman =====
 backBtn.addEventListener("click", () => {
+  stopSKUScanner();
   window.location.href = "inputBarang.html";
+});
+
+// ===== SAFETY NET: stop scanner saat halaman ditinggal =====
+window.addEventListener("beforeunload", () => stopSKUScanner());
+window.addEventListener("pagehide", () => stopSKUScanner());
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") stopSKUScanner();
 });
 
 init();

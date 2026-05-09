@@ -1,54 +1,25 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Poppins", sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
 
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    background-color: aliceblue;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; background-color: aliceblue;
 }
 
 /* ===== NAVBAR ===== */
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 15px;
-    width: 100%;
-    height: 45px;
-    background-color: aqua;
-    position: fixed;
-    top: 0;
-    z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 15px; width: 100%; height: 45px;
+    background-color: aqua; position: fixed; top: 0; z-index: 100;
 }
-.title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    font-size: 20px;
-    font-weight: 600;
-}
+.title { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 20px; font-weight: 600; }
 i { font-size: 30px; cursor: pointer; }
 
 /* ===== INFO INVOICE ===== */
 .invoice-info {
-    margin-top: 60px;
-    width: 90%;
-    background: white;
-    border: 1px solid black;
-    border-radius: 10px;
-    box-shadow: 3px 5px 0 0 black;
-    padding: 14px 20px;
-    display: flex;
-    gap: 30px;
-    flex-wrap: wrap;
-    font-size: 13px;
+    margin-top: 60px; width: 90%; background: white;
+    border: 1px solid black; border-radius: 10px;
+    box-shadow: 3px 5px 0 0 black; padding: 14px 20px;
+    display: flex; gap: 30px; flex-wrap: wrap; font-size: 13px;
 }
 .invoice-info .info-item { display: flex; flex-direction: column; gap: 2px; }
 .invoice-info .info-label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; }
@@ -56,19 +27,15 @@ i { font-size: 30px; cursor: pointer; }
 
 /* ===== NAV CONTROL ===== */
 .nav-controll {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 90%;
-    margin-top: 12px;
-    padding: 5px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    width: 90%; margin-top: 12px; padding: 5px 0;
 }
 .nav-controll > p { font-style: italic; font-size: 13px; color: #555; }
 .tambah-btn {
     padding: 5px 12px; font-size: 12px; font-weight: 600;
-    background-color: rgb(212, 214, 230); border: 1px solid black;
-    border-radius: 5px; box-shadow: 3px 5px 0 0 black; cursor: pointer;
-    transition: transform 0.1s ease;
+    background-color: rgb(212,214,230); border: 1px solid black;
+    border-radius: 5px; box-shadow: 3px 5px 0 0 black;
+    cursor: pointer; transition: transform 0.1s ease;
 }
 .tambah-btn:hover { transform: scale(0.90); }
 
@@ -87,42 +54,27 @@ tbody tr:nth-child(even):not(.empty-row) { background-color: #f0f4ff; }
 tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: background-color 0.15s ease; }
 
 .sku-badge {
-    display: inline-block;
-    background: #e8f0ff;
-    color: rgb(16,44,168);
-    border: 1px solid #c0d0f0;
-    border-radius: 5px;
-    padding: 2px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+    display: inline-block; background: #e8f0ff; color: rgb(16,44,168);
+    border: 1px solid #c0d0f0; border-radius: 5px; padding: 2px 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
 }
-
 .no-expired { color: #bbb; font-size: 14px; }
 
 .btn-hapus {
     padding: 4px 10px; font-size: 11px; font-weight: 600;
     background-color: #ff4d4d; color: white; border: 1px solid black;
     border-radius: 5px; box-shadow: 2px 3px 0 0 black; cursor: pointer;
-    transition: transform 0.1s ease; margin: auto;
-    display: flex; align-items: center; gap: 4px;
+    transition: transform 0.1s ease; display: flex; align-items: center; gap: 4px; margin: auto;
 }
 .btn-hapus:hover { transform: scale(0.9); }
 
-/* ===== TOTAL HARGA BAR ===== */
+/* ===== TOTAL BAR ===== */
 .total-harga-bar {
-    width: 90%;
-    margin: 0 auto 20px;
-    background: white;
-    border: 1px solid black;
-    border-radius: 10px;
-    box-shadow: 3px 4px 0 0 black;
-    padding: 12px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    font-weight: 600;
+    width: 90%; margin: 0 auto 20px; background: white;
+    border: 1px solid black; border-radius: 10px;
+    box-shadow: 3px 4px 0 0 black; padding: 12px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 14px; font-weight: 600;
 }
 .total-harga-bar strong { font-size: 18px; color: #1a6b2a; }
 
@@ -131,41 +83,25 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,0.5); z-index: 200;
     justify-content: center; align-items: flex-start;
-    padding: 20px 0;
-    overflow-y: auto;
+    padding: 20px 0; overflow-y: auto;
 }
 .modal-overlay.active { display: flex; }
 
-/* ===== MODAL BASE ===== */
+/* ===== MODAL ===== */
 .modal {
-    background: white;
-    border: 2px solid black;
-    border-radius: 15px;
-    box-shadow: 8px 12px 0 0 black;
-    padding: 22px 20px;
-    width: 92%;
-    max-width: 480px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: auto;
+    background: white; border: 2px solid black; border-radius: 15px;
+    box-shadow: 8px 12px 0 0 black; padding: 22px 20px;
+    width: 92%; max-width: 460px; display: flex; flex-direction: column;
+    gap: 10px; margin: auto;
 }
 
 /* ===== MODAL TAMBAH ===== */
-.modal-tambah { gap: 10px; }
-
-.modal-top-bar {
-    display: flex; align-items: center; justify-content: space-between;
-}
-.modal-top-bar h3 {
-    font-size: 15px; font-weight: 700;
-    display: flex; align-items: center; gap: 8px;
-}
+.modal-top-bar { display: flex; align-items: center; justify-content: space-between; }
+.modal-top-bar h3 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 .modal-top-bar h3 i { font-size: 20px !important; }
 .modal-close-x {
-    background: none; border: none; cursor: pointer;
-    font-size: 20px; color: #888; padding: 2px;
-    display: flex; align-items: center; transition: color 0.15s;
+    background: none; border: none; cursor: pointer; font-size: 20px;
+    color: #888; padding: 2px; display: flex; align-items: center; transition: color 0.15s;
 }
 .modal-close-x:hover { color: #111; }
 .modal-close-x i { font-size: 22px !important; }
@@ -174,22 +110,13 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
 .modal-form { display: flex; flex-direction: column; gap: 10px; }
 
 .form-section-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: rgb(16,44,168);
-    background: #e8f0ff;
-    border-radius: 5px;
-    padding: 3px 8px;
-    display: inline-block;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.8px; color: rgb(16,44,168); background: #e8f0ff;
+    border-radius: 5px; padding: 3px 8px; display: inline-block;
 }
 
 .form-row { display: flex; flex-direction: column; gap: 4px; }
-.form-row label {
-    font-size: 11px; font-weight: 600; color: #555;
-    text-transform: uppercase; letter-spacing: 0.4px;
-}
+.form-row label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.4px; }
 .req { color: #ff4d4d; }
 .opt { color: #aaa; font-size: 10px; text-transform: none; font-weight: 400; }
 .field-hint { font-size: 10px; color: #aaa; font-style: italic; }
@@ -197,29 +124,23 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
 .form-row input[type="text"],
 .form-row input[type="date"],
 .form-row input[type="number"],
-.modal-form input[type="number"] {
+.modal-form input[type="number"],
+.modal-form input[type="date"] {
     padding: 8px 12px; border-radius: 8px; border: 1px solid #aaa;
     background-color: rgb(229,229,229); font-size: 13px;
     font-family: "Poppins", sans-serif; outline: none; width: 100%;
 }
-.form-row input:focus,
-.modal-form input:focus {
+.form-row input:focus, .modal-form input:focus {
     background-color: rgb(210,220,240); border-color: rgb(16,44,168);
 }
 
-/* SKU row with scan button */
-.sku-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
+/* SKU row */
+.sku-row { display: flex; gap: 8px; align-items: center; }
 .sku-row input { flex: 1; }
 .btn-scan-sku {
-    flex-shrink: 0;
-    width: 36px; height: 36px;
-    background: rgb(16,44,168); color: white;
-    border: 1px solid #111; border-radius: 8px;
-    box-shadow: 2px 3px 0 0 #111;
+    flex-shrink: 0; width: 36px; height: 36px;
+    background: rgb(16,44,168); color: white; border: 1px solid #111;
+    border-radius: 8px; box-shadow: 2px 3px 0 0 #111;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: transform 0.1s;
 }
@@ -227,43 +148,27 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
 .btn-scan-sku i { font-size: 18px !important; }
 
 /* Grid 2 cols */
-.form-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* Subtotal preview */
 .subtotal-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f0fff4;
-    border: 1px solid #28c840;
-    border-radius: 8px;
-    padding: 8px 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #f0fff4; border: 1px solid #28c840; border-radius: 8px; padding: 8px 12px;
 }
 .subtotal-label { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; }
 .subtotal-preview strong { font-size: 15px; font-weight: 800; color: #1a6b2a; }
 
 /* ===== SCANNER PANEL ===== */
 .scanner-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    background: #f8f8f8;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 10px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: #f8f8f8; border: 1px solid #ddd;
+    border-radius: 10px; padding: 10px;
 }
 .scanner-panel.hidden { display: none; }
 
 .scan-box {
-    position: relative;
-    width: 100%; height: 160px;
-    background: #0a0a0a; border-radius: 8px;
-    overflow: hidden; border: 2px solid #111;
+    position: relative; width: 100%; height: 160px;
+    background: #0a0a0a; border-radius: 8px; overflow: hidden; border: 2px solid #111;
 }
 .scan-box video { width: 100%; height: 100%; object-fit: cover; }
 
@@ -286,15 +191,12 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
 .scan-placeholder i { font-size: 36px !important; color: #444; }
 .scan-placeholder p { font-size: 11px; }
 
-.scan-actions {
-    display: flex; align-items: center; gap: 8px;
-}
+.scan-actions { display: flex; align-items: center; gap: 8px; }
 .btn-cam, .btn-gallery {
     flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600;
     border: 1px solid #111; border-radius: 7px; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 5px;
-    box-shadow: 2px 2px 0 0 #111; font-family: "Poppins", sans-serif;
-    transition: transform 0.1s;
+    box-shadow: 2px 2px 0 0 #111; font-family: "Poppins", sans-serif; transition: transform 0.1s;
 }
 .btn-cam { background: rgb(16,44,168); color: white; }
 .btn-gallery { background: rgb(212,214,230); color: #111; }
@@ -303,71 +205,53 @@ tbody tr:not(.empty-row):hover { background-color: #dce8ff; transition: backgrou
 .scan-or { font-size: 11px; color: #aaa; flex-shrink: 0; }
 
 .btn-close-scanner {
-    flex-shrink: 0; width: 28px; height: 28px;
-    background: #eee; border: 1px solid #aaa; border-radius: 6px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: background 0.1s;
+    flex-shrink: 0; width: 28px; height: 28px; background: #eee;
+    border: 1px solid #aaa; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: background 0.1s;
 }
 .btn-close-scanner:hover { background: #ffd0d0; }
 .btn-close-scanner i { font-size: 16px !important; }
 
 .scan-result {
     display: flex; align-items: center; gap: 8px;
-    background: #e8fff2; border: 1px solid #28c840;
-    border-radius: 8px; padding: 7px 10px;
+    background: #e8fff2; border: 1px solid #28c840; border-radius: 8px; padding: 7px 10px;
 }
 .scan-result.hidden { display: none; }
 .scan-result i { font-size: 18px !important; color: #28c840; }
 .scan-result-label { font-size: 10px; color: #666; font-weight: 600; display: block; }
 .scan-result-val { font-size: 13px; font-weight: 700; color: #111; }
 .btn-use-scan {
-    margin-left: auto; padding: 4px 10px; font-size: 11px;
-    font-weight: 600; background: #28c840; color: white;
-    border: 1px solid #111; border-radius: 6px; cursor: pointer;
-    font-family: "Poppins", sans-serif; white-space: nowrap;
+    margin-left: auto; padding: 4px 10px; font-size: 11px; font-weight: 600;
+    background: #28c840; color: white; border: 1px solid #111;
+    border-radius: 6px; cursor: pointer; font-family: "Poppins", sans-serif; white-space: nowrap;
 }
-
-/* ===== AUTOFILL NOTICE ===== */
-.autofill-notice {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff8e1;
-    border: 1px solid #ffc107;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: #7a5c00;
-}
-.autofill-notice.hidden { display: none; }
-.autofill-notice i { font-size: 16px !important; color: #ffc107; flex-shrink: 0; }
 
 /* ===== SCAN STATUS ===== */
 .scan-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 8px;
-    padding: 7px 12px;
-    font-size: 12px;
-    font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 500;
 }
-.scan-status[data-state="loading"] { background: #fffbe6; border: 1px solid #ffc107; color: #7a5c00; }
+.scan-status[data-state="loading"]  { background: #fffbe6; border: 1px solid #ffc107; color: #7a5c00; }
 .scan-status[data-state="scanning"] { background: #e8f4ff; border: 1px solid #5b9cff; color: #1a3c8c; }
-.scan-status[data-state="error"] { background: #fff0f0; border: 1px solid #ff7070; color: #cc2222; }
+.scan-status[data-state="error"]    { background: #fff0f0; border: 1px solid #ff7070; color: #cc2222; }
 .scan-status i { font-size: 15px !important; flex-shrink: 0; }
 
-/* Spinner */
 .spin {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid #ffc10744;
-    border-top-color: #ffc107;
-    border-radius: 50%;
-    flex-shrink: 0;
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #ffc10744; border-top-color: #ffc107;
+    border-radius: 50%; flex-shrink: 0;
     animation: doSpin 0.7s linear infinite;
 }
 @keyframes doSpin { to { transform: rotate(360deg); } }
+
+/* ===== AUTOFILL NOTICE ===== */
+.autofill-notice {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff8e1; border: 1px solid #ffc107;
+    border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #7a5c00;
+}
+.autofill-notice.hidden { display: none; }
+.autofill-notice i { font-size: 16px !important; color: #ffc107; flex-shrink: 0; }
 
 /* ===== MODAL CONFIRM ===== */
 .modal-confirm { text-align: center; gap: 12px; max-width: 320px; }

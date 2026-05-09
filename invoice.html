@@ -53,7 +53,6 @@
         </table>
     </div>
 
-    <!-- Total Harga Footer -->
     <div class="total-harga-bar">
         <span>Total Nilai Invoice:</span>
         <strong id="totalHargaDisplay">Rp 0</strong>
@@ -69,22 +68,22 @@
 
             <div class="modal-form">
 
-                <!-- SKU -->
                 <div class="form-section-label">Identifikasi Produk</div>
 
+                <!-- SKU dengan scan -->
                 <div class="form-row">
                     <label>SKU / Kode Unik <span class="req">*</span></label>
                     <div class="sku-row">
-                        <input type="text" id="inputSKU" placeholder="Contoh: SKU-001 atau scan barcode" autocomplete="off">
+                        <input type="text" id="inputSKU" placeholder="Ketik atau scan barcode SKU" autocomplete="off">
                         <button class="btn-scan-sku" id="btnScanSKU" title="Scan Barcode SKU">
-                            <i class="bx bx-scan-barcode"></i>
+                            <i class="bx bx-barcode-reader"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Scanner SKU panel -->
+                <!-- Panel scanner SKU -->
                 <div class="scanner-panel hidden" id="scannerSKUPanel">
-                    <div class="scan-box" id="scanBoxSKU">
+                    <div class="scan-box">
                         <video id="cameraStreamSKU" autoplay playsinline></video>
                         <div class="scan-frame"><div class="scan-line"></div></div>
                         <div class="scan-placeholder" id="scanPlaceholderSKU">
@@ -97,7 +96,7 @@
                         <span class="scan-or">atau</span>
                         <label class="btn-gallery" for="galleryInputSKU"><i class="bx bx-image"></i> Galeri</label>
                         <input type="file" id="galleryInputSKU" accept="image/*" style="display:none">
-                        <button class="btn-close-scanner" id="btnCloseScannerSKU"><i class="bx bx-x"></i></button>
+                        <button class="btn-close-scanner" id="btnCloseScannerSKU" title="Tutup"><i class="bx bx-x"></i></button>
                     </div>
                     <div class="scan-result hidden" id="scanResultSKU">
                         <i class="bx bx-check-circle"></i>
@@ -157,45 +156,13 @@
                     </div>
                 </div>
 
-                <!-- Expired Date -->
                 <div class="form-section-label" style="margin-top:4px">Tanggal & Harga</div>
 
+                <!-- Expired Date — manual only -->
                 <div class="form-row">
                     <label>Expired Date <span class="opt">(opsional)</span></label>
-                    <div class="sku-row">
-                        <input type="date" id="inputExpired">
-                        <button class="btn-scan-sku" id="btnScanExpired" title="Scan Expired Date">
-                            <i class="bx bx-scan"></i>
-                        </button>
-                    </div>
-                    <span class="field-hint">Kosongkan jika tidak ada expired date</span>
-                </div>
-
-                <!-- Scanner Expired panel -->
-                <div class="scanner-panel hidden" id="scannerExpiredPanel">
-                    <div class="scan-box" id="scanBoxExpired">
-                        <video id="cameraStreamExpired" autoplay playsinline></video>
-                        <div class="scan-frame"><div class="scan-line"></div></div>
-                        <div class="scan-placeholder" id="scanPlaceholderExpired">
-                            <i class="bx bx-barcode-reader"></i>
-                            <p>Kamera belum aktif</p>
-                        </div>
-                    </div>
-                    <div class="scan-actions">
-                        <button class="btn-cam" id="btnOpenCamExpired"><i class="bx bx-camera"></i> Kamera</button>
-                        <span class="scan-or">atau</span>
-                        <label class="btn-gallery" for="galleryInputExpired"><i class="bx bx-image"></i> Galeri</label>
-                        <input type="file" id="galleryInputExpired" accept="image/*" style="display:none">
-                        <button class="btn-close-scanner" id="btnCloseScannerExpired"><i class="bx bx-x"></i></button>
-                    </div>
-                    <div class="scan-result hidden" id="scanResultExpired">
-                        <i class="bx bx-check-circle"></i>
-                        <div>
-                            <span class="scan-result-label">Hasil Scan:</span>
-                            <span class="scan-result-val" id="scanResultValExpired">—</span>
-                        </div>
-                        <button class="btn-use-scan" id="btnUseScanExpired">Gunakan</button>
-                    </div>
+                    <input type="date" id="inputExpired">
+                    <span class="field-hint">Kosongkan jika produk tidak memiliki expired date</span>
                 </div>
 
                 <!-- Harga HPP & Harga Jual -->
@@ -210,7 +177,7 @@
                     </div>
                 </div>
 
-                <!-- Jumlah & Total -->
+                <!-- Qty & Subtotal -->
                 <div class="form-grid-2">
                     <div class="form-row">
                         <label>Jumlah / Qty <span class="req">*</span></label>
@@ -224,7 +191,6 @@
 
             </div>
 
-            <!-- SKU autofill notice -->
             <div class="autofill-notice hidden" id="autofillNotice">
                 <i class="bx bx-info-circle"></i>
                 <span>Data produk ditemukan dari SKU. Isi jumlah barang untuk melanjutkan.</span>
