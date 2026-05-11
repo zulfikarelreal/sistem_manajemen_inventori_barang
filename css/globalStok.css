@@ -391,3 +391,71 @@ tbody tr:not(.empty-row):hover{
     background:#fff4cc;
     color:#8a5b00;
 }
+
+/* ===== INVOICE LINK ===== */
+
+.invoice-link{
+    text-decoration:none;
+    font-weight:600;
+    color:rgb(16,44,168);
+}
+
+.invoice-link:hover{
+    text-decoration:underline;
+}
+
+
+/* ===== SKU BUTTON ===== */
+
+.sku-btn{
+    padding:6px 10px;
+    border:none;
+    border-radius:8px;
+    background:#e8f0ff;
+    color:rgb(16,44,168);
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid #111;
+    box-shadow:2px 2px 0 #111;
+    transition:.15s;
+}
+
+.sku-btn:hover{
+    transform:translateY(2px);
+    box-shadow:1px 1px 0 #111;
+}
+
+
+/* ===== EXPIRED BADGE ===== */
+
+.expired-badge{
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:700;
+    border:1px solid #111;
+}
+
+
+/* HIJAU */
+
+.expired-green{
+    background:#d4ffd4;
+    color:#008a00;
+}
+
+
+/* KUNING */
+
+.expired-yellow{
+    background:#fff4cc;
+    color:#9a6b00;
+}
+
+
+/* MERAH */
+
+.expired-red{
+    background:#ffd6d6;
+    color:#cc0000;
+}

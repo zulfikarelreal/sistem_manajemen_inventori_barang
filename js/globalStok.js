@@ -141,47 +141,130 @@ function renderRows(rows){
 
     rows.forEach(function(r){
 
+        // ===== EXPIRED CHECK =====
+
+        var expiredClass = 'expired-green';
+        var expiredText = r.expired;
+
+        if(r.expired !== '-'){
+
+            var today = new Date();
+
+            var expDate = new Date(r.expired);
+
+            var diffTime =
+            expDate.getTime() - today.getTime();
+
+            var diffDays =
+            Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if(diffDays <= 0){
+
+                expiredClass = 'expired-red';
+
+            }
+            else if(diffDays <= 30){
+
+                expiredClass = 'expired-yellow';
+
+            }
+            else{
+
+                expiredClass = 'expired-green';
+
+            }
+
+        }
+
         var tr = document.createElement('tr');
 
         tr.innerHTML =
 
+        // NOMOR
         '<td>' + r.nomor + '</td>' +
 
+        // INVOICE LINK
         '<td>' +
-        '<span class="badge badge-blue">' +
+
+        '<a href="invoice.html?id=' +
         r.invoice +
-        '</span>' +
+        '" class="invoice-link">' +
+
+        r.invoice +
+
+        '</a>' +
+
         '</td>' +
 
-        '<td>' + r.sku + '</td>' +
+        // SKU CLICKABLE
+        '<td>' +
 
+        '<button class="sku-btn">' +
+
+        r.sku +
+
+        '</button>' +
+
+        '</td>' +
+
+        // NAMA
         '<td>' + r.nama + '</td>' +
 
+        // MERK
         '<td>' + r.merk + '</td>' +
 
+        // KATEGORI
         '<td>' + r.kategori + '</td>' +
 
-        '<td>' + r.expired + '</td>' +
+        // EXPIRED
+        '<td>' +
 
+        '<span class="expired-badge ' +
+        expiredClass +
+        '">' +
+
+        expiredText +
+
+        '</span>' +
+
+        '</td>' +
+
+        // STOK
         '<td>' + r.stok + '</td>' +
 
+        // HPP
         '<td>Rp ' +
         Number(r.hpp).toLocaleString('id-ID') +
         '</td>' +
 
+        // JUAL
         '<td>Rp ' +
         Number(r.jual).toLocaleString('id-ID') +
         '</td>' +
 
+        // LOKASI
         '<td>' + r.lokasi + '</td>' +
 
+        // BUTTON BARCODE
         '<td>' +
+
         '<button class="btn-barcode">' +
         'Barcode' +
         '</button>' +
+
         '</td>';
 
-        // BUTTON BARCODE
+        // ===== SKU BUTTON =====
+
+        tr.querySelector('.sku-btn').onclick =
+        function(){
+
+            showBarcode(r.nama, r.sku);
+
+        };
+
+        // ===== BUTTON BARCODE =====
+
         tr.querySelector('.btn-barcode').onclick =
         function(){
 
