@@ -70,6 +70,7 @@ function loadGlobalStok(){
 
     Object.values(invoices).forEach(function(inv){
 
+        // CEK ITEMS
         if(!inv.items || inv.items.length === 0){
             return;
         }
@@ -80,8 +81,10 @@ function loadGlobalStok(){
 
                 nomor : nomor++,
 
+                // DATA INVOICE
                 invoice : inv.invoice || '-',
 
+                // DATA BARANG
                 sku : item.sku || '-',
 
                 nama : item.nama || '-',
@@ -92,12 +95,14 @@ function loadGlobalStok(){
 
                 expired : item.expired || '-',
 
-                stok : item.stok || '-',
+                stok : item.stok || 0,
 
-                hpp : item.hpp || '-',
+                // HARGA
+                hpp : item.hargaHPP || 0,
 
-                jual : item.jual || '-',
+                jual : item.hargaJual || 0,
 
+                // LOKASI
                 lokasi : item.lokasi || '-'
 
             });
@@ -106,6 +111,7 @@ function loadGlobalStok(){
 
     });
 
+    // DATA KOSONG
     if(allRows.length === 0){
 
         tbody.innerHTML =
@@ -159,9 +165,13 @@ function renderRows(rows){
 
         '<td>' + r.stok + '</td>' +
 
-        '<td>' + r.hpp + '</td>' +
+        '<td>Rp ' +
+        Number(r.hpp).toLocaleString('id-ID') +
+        '</td>' +
 
-        '<td>' + r.jual + '</td>' +
+        '<td>Rp ' +
+        Number(r.jual).toLocaleString('id-ID') +
+        '</td>' +
 
         '<td>' + r.lokasi + '</td>' +
 
@@ -171,6 +181,7 @@ function renderRows(rows){
         '</button>' +
         '</td>';
 
+        // BUTTON BARCODE
         tr.querySelector('.btn-barcode').onclick =
         function(){
 
@@ -192,6 +203,7 @@ document.getElementById('searchInput')
 
     var keyword = this.value.toLowerCase();
 
+    // RESET
     if(keyword === ''){
 
         renderRows(allRows);
@@ -199,6 +211,7 @@ document.getElementById('searchInput')
 
     }
 
+    // FILTER
     var filtered = allRows.filter(function(r){
 
         return (
@@ -214,6 +227,7 @@ document.getElementById('searchInput')
 
     });
 
+    // HASIL KOSONG
     if(filtered.length === 0){
 
         document.getElementById('globalTableBody').innerHTML =
@@ -247,9 +261,13 @@ function showBarcode(nama, sku){
     JsBarcode('#barcodeCanvas', sku, {
 
         format : 'CODE128',
+
         lineColor : '#111',
+
         width : 2,
+
         height : 70,
+
         displayValue : true
 
     });
@@ -306,7 +324,7 @@ function(){
 
         canvas.height = img.height;
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#ffffff';
 
         ctx.fillRect(
             0,
