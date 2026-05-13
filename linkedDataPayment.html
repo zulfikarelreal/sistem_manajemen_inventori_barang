@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/linkedDataPayment.css">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
+    <link href="https://cdn.boxicons.com/3.0.8/fonts/brands/boxicons-brands.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Payment | Linked Data | Invenz</title>
+</head>
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>INVENZ</span>
+            <i class="bx bx-x sidebar-close" id="sidebarClose"></i>
+        </div>
+        <div class="sidebar-user">
+            <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+            <div>
+                <div class="sidebar-username" id="sidebarUsername">Admin</div>
+                <div class="sidebar-role">Operator Inventori</div>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="dashboard.html"><i class="bx bx-home"></i> Dashboard</a></li>
+            <li><a href="inputBarang.html"><i class="bx bx-package"></i> Input Barang</a></li>
+            <li><a href="globalStok.html"><i class="bx bx-list-ul-square"></i> Global Stok</a></li>
+            <li><a href="stockOut.html"><i class="bx bx-truck"></i> Stock Out</a></li>
+            <li>
+                <a href="linkedData.html" class="active"><i class="bx bx-network-chart"></i> Linked Data</a>
+                <ul class="submenu">
+                    <li><a href="linkedDataKategori.html">Kategori</a></li>
+                    <li><a href="linkedDataMerk.html">Merk</a></li>
+                    <li><a href="linkedDataSupplier.html">Supplier</a></li>
+                    <li><a href="linkedDataLokasi.html">Lokasi Inventori</a></li>
+                    <li><a href="linkedDataCustomer.html">Customer</a></li>
+                    <li><a href="linkedDataPayment.html" class="submenu-active">Payment</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn">
+                <i class="bx bx-log-out"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <i class="bx bx-menu hamburger" id="hamburger"></i>
+        <div class="title">
+            <i class="bxf bx-credit-card"></i>
+            <h6>LINKED DATA — PAYMENT</h6>
+        </div>
+        <i class="bxf bx-user-circle"></i>
+    </div>
+
+    <!-- Linked Data Tab Nav -->
+    <div class="tab-nav-wrapper">
+        <div class="tab-nav" id="tabNav">
+            <a href="linkedDataKategori.html" class="tab-item">Kategori</a>
+            <a href="linkedDataMerk.html" class="tab-item">Merk</a>
+            <a href="linkedDataSupplier.html" class="tab-item">Supplier</a>
+            <a href="linkedDataLokasi.html" class="tab-item">Lokasi</a>
+            <a href="linkedDataCustomer.html" class="tab-item">Customer</a>
+            <a href="linkedDataPayment.html" class="tab-item active">Payment</a>
+        </div>
+    </div>
+
+    <!-- Nav Control -->
+    <div class="nav-controll">
+        <p>* metode pembayaran terhubung dengan transaksi Stock Out</p>
+        <button class="btn-add" id="openModalBtn">
+            <i class="bx bx-plus"></i> Tambah Payment
+        </button>
+    </div>
+
+    <!-- Default Payment Info -->
+    <div class="info-banner">
+        <i class="bx bx-info-circle"></i>
+        <span>Metode pembayaran default: <strong>Cash</strong> dan <strong>QRIS</strong> sudah tersedia secara bawaan dan tidak dapat dihapus.</span>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="cards-container" id="cardsContainer">
+        <!-- Default: Cash -->
+        <div class="payment-card default-card" data-id="cash">
+            <div class="card-icon">
+                <i class="bx bx-money"></i>
+            </div>
+            <div class="card-body">
+                <div class="card-name">Cash</div>
+                <div class="card-desc">Pembayaran tunai langsung</div>
+                <span class="badge-default">Default</span>
+            </div>
+            <div class="card-actions">
+                <button class="btn-card-edit" data-id="cash" data-nama="Cash" data-desc="Pembayaran tunai langsung" data-icon="bx-money">
+                    <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn-card-delete default-locked" title="Tidak dapat dihapus">
+                    <i class="bx bx-lock"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Default: QRIS -->
+        <div class="payment-card default-card" data-id="qris">
+            <div class="card-icon qris-icon">
+                <i class="bx bx-qr"></i>
+            </div>
+            <div class="card-body">
+                <div class="card-name">QRIS</div>
+                <div class="card-desc">Scan QR Code pembayaran</div>
+                <span class="badge-default">Default</span>
+            </div>
+            <div class="card-actions">
+                <button class="btn-card-edit" data-id="qris" data-nama="QRIS" data-desc="Scan QR Code pembayaran" data-icon="bx-qr">
+                    <i class="bx bx-edit"></i>
+                </button>
+                <button class="btn-card-delete default-locked" title="Tidak dapat dihapus">
+                    <i class="bx bx-lock"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom cards injected here by JS -->
+    </div>
+
+    <!-- Empty state if no custom -->
+    <div class="custom-section-label" id="customLabel" style="display:none;">
+        <span>Metode Kustom</span>
+    </div>
+
+    <!-- Table -->
+    <div class="container">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama Metode</th>
+                    <th>Keterangan</th>
+                    <th>Tipe</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Rows inserted by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ===== MODAL TAMBAH / EDIT PAYMENT ===== -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3 id="modalTitle"><i class="bx bx-credit-card"></i> Tambah Metode Payment</h3>
+
+            <div class="modal-form">
+                <div class="form-group">
+                    <label>Nama Metode <span class="required">*</span></label>
+                    <input type="text" id="inputNama" placeholder="Contoh: Transfer Bank, OVO, GoPay...">
+                </div>
+
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <input type="text" id="inputDesc" placeholder="Deskripsi singkat metode pembayaran">
+                </div>
+
+                <div class="form-group">
+                    <label>Ikon</label>
+                    <div class="icon-picker" id="iconPicker">
+                        <div class="icon-option selected" data-icon="bx-credit-card"><i class="bx bx-credit-card"></i></div>
+                        <div class="icon-option" data-icon="bx-wallet"><i class="bx bx-wallet"></i></div>
+                        <div class="icon-option" data-icon="bx-mobile"><i class="bx bx-mobile"></i></div>
+                        <div class="icon-option" data-icon="bx-bank"><i class="bx bx-bank"></i></div>
+                        <div class="icon-option" data-icon="bx-transfer"><i class="bx bx-transfer"></i></div>
+                        <div class="icon-option" data-icon="bx-coin"><i class="bx bx-coin"></i></div>
+                        <div class="icon-option" data-icon="bx-dollar"><i class="bx bx-dollar"></i></div>
+                        <div class="icon-option" data-icon="bx-qr"><i class="bx bx-qr"></i></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="toggle-row">
+                        <span class="toggle-label" id="toggleLabel">Aktif</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleAktif" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <p class="error-msg" id="errorMsg"></p>
+
+            <div class="modal-actions">
+                <button class="btn-batal" id="batalBtn">Batal</button>
+                <button class="btn-simpan" id="simpanBtn">
+                    <i class="bx bx-save"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL KONFIRMASI HAPUS ===== -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-confirm">
+            <div class="confirm-icon">🗑️</div>
+            <h3>Hapus Metode Payment?</h3>
+            <p class="confirm-desc" id="confirmDesc">Metode ini akan dihapus permanen.</p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="confirmNo">Tidak</button>
+                <button class="btn-hapus-confirm" id="confirmYes">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL EDIT DEFAULT ===== -->
+    <div class="modal-overlay" id="editDefaultOverlay">
+        <div class="modal">
+            <h3 id="editDefaultTitle"><i class="bx bx-edit"></i> Edit Metode Default</h3>
+            <div class="modal-form">
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <input type="text" id="editDefaultDesc" placeholder="Deskripsi singkat">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <div class="toggle-row">
+                        <span class="toggle-label" id="editDefaultToggleLabel">Aktif</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="editDefaultToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <p class="error-msg" id="errorMsgDefault"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="editDefaultBatal">Batal</button>
+                <button class="btn-simpan" id="editDefaultSimpan"><i class="bx bx-save"></i> Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="js/linkedDataPayment.js"></script>
+</body>
+</html>
