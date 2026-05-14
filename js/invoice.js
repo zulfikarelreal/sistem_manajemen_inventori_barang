@@ -1,4 +1,4 @@
-// ===== INVOICE.JS — REVISI: + Lokasi Inventori (CustomDropdown) =====
+// ===== INVOICE.JS — REVISI: + Stat Jenis Barang, + Edit Item, + Fix Sync GlobalStok =====
 
 const params = new URLSearchParams(window.location.search);
 const invoiceId = params.get("id");
@@ -23,6 +23,7 @@ const autofillNotice = document.getElementById("autofillNotice");
 
 let rowCount = 0;
 let rowToDelete = null;
+let editRowIndex = null; // ✅ index item yang sedang diedit (-1 = mode tambah baru)
 
 // ========================================================
 // ===== SCANNER STATE ====================================
@@ -114,7 +115,7 @@ const ddKategori = new CustomDropdown("cdKategori", "kategori", {
 const ddMerk = new CustomDropdown("cdMerk", "merk", {
   icon: "bx-purchase-tag",
 });
-const ddLokasi = new CustomDropdown("cdLokasi", "lokasi", { icon: "bx-map" }); // ← BARU
+const ddLokasi = new CustomDropdown("cdLokasi", "lokasi", { icon: "bx-map" });
 
 // ========================================================
 // ===== HELPERS ==========================================
@@ -178,40 +179,42 @@ function findSKUInLinkedData(sku) {
 // ========================================================
 // ===== GLOBAL STOCK SYNC ================================
 // ========================================================
-function syncToGlobalStock(item) {
-  const gs = JSON.parse(localStorage.getItem("globalStock") || "{}");
-  const key = item.sku || item.nama;
-  if (!gs[key]) {
-    gs[key] = {
-      sku: item.sku || "",
-      nama: item.nama,
-      merk: item.merk,
-      kategori: item.kategori,
-      lokasi: item.lokasi || "-", // ← LOKASI DISIMPAN
-      hargaHPP: item.hargaHPP,
-      hargaJual: item.hargaJual,
-      totalStok: parseInt(item.stok) || 0,
-    };
-  } else {
-    gs[key].hargaHPP = item.hargaHPP;
-    gs[key].hargaJual = item.hargaJual;
-    gs[key].lokasi = item.lokasi || gs[key].lokasi || "-"; // ← UPDATE LOKASI
-    gs[key].totalStok =
-      (parseInt(gs[key].totalStok) || 0) + (parseInt(item.stok) || 0);
-  }
-  localStorage.setItem("globalStock", JSON.stringify(gs));
-}
 
-function removeFromGlobalStock(item) {
-  const gs = JSON.parse(localStorage.getItem("globalStock") || "{}");
-  const key = item.sku || item.nama;
-  if (gs[key]) {
-    gs[key].totalStok = Math.max(
-      0,
-      (parseInt(gs[key].totalStok) || 0) - (parseInt(item.stok) || 0),
-    );
-    localStorage.setItem("globalStock", JSON.stringify(gs));
-  }
+/**
+ * ✅ Rebuild seluruh globalStock dari semua invoices yang ada.
+ * Ini adalah cara paling akurat — menghindari drift saat edit/hapus item.
+ */
+function rebuildGlobalStock() {
+  const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
+  const gs = {};
+
+  Object.values(invoices).forEach((inv) => {
+    if (!inv.items) return;
+    inv.items.forEach((item) => {
+      const key = item.sku || item.nama;
+      if (!gs[key]) {
+        gs[key] = {
+          sku: item.sku || "",
+          nama: item.nama,
+          merk: item.merk,
+          kategori: item.kategori,
+          lokasi: item.lokasi || "-",
+          hargaHPP: item.hargaHPP,
+          hargaJual: item.hargaJual,
+          totalStok: parseInt(item.stok) || 0,
+        };
+      } else {
+        // Update harga & lokasi dengan yang paling baru, akumulasi stok
+        gs[key].hargaHPP = item.hargaHPP;
+        gs[key].hargaJual = item.hargaJual;
+        gs[key].lokasi = item.lokasi || gs[key].lokasi || "-";
+        gs[key].totalStok =
+          (parseInt(gs[key].totalStok) || 0) + (parseInt(item.stok) || 0);
+      }
+    });
+  });
+
+  localStorage.setItem("globalStock", JSON.stringify(gs));
 }
 
 // ========================================================
@@ -235,7 +238,6 @@ function handleSKULookup(sku) {
     ddNama.setValue(found.nama || "");
     ddMerk.setValue(found.merk || "");
     ddKategori.setValue(found.kategori || "");
-    // lokasi tidak di-autofill dari SKU — user pilih sendiri
     autofillNotice.classList.remove("hidden");
     inputStok.focus();
   } else {
@@ -362,16 +364,13 @@ function init() {
     renderInfo(data);
     if (data.items?.length) {
       itemTableBody.querySelector(".empty-row")?.remove();
-      data.items.forEach((item) => tambahBaris(item, false));
+      data.items.forEach((item, idx) => tambahBaris(item, false, idx));
     }
   } else {
-    invoiceInfo.innerHTML = `
-      <div class="info-item">
-        <span class="info-label">Invoice</span>
-        <span class="info-value">${invoiceId}</span>
-      </div>`;
+    invoiceInfo.innerHTML = `<div class="info-item"><span class="info-label">Invoice</span><span class="info-value">${invoiceId}</span></div>`;
   }
   updateTotalHargaDisplay();
+  updateStatJenis(); // ✅ Render stat jenis
 }
 
 function renderInfo(data) {
@@ -380,8 +379,22 @@ function renderInfo(data) {
     <div class="info-item"><span class="info-label">Tanggal Masuk</span><span class="info-value">${data.tanggal}</span></div>
     <div class="info-item"><span class="info-label">Nama Supplier</span><span class="info-value">${data.supplier}</span></div>
     <div class="info-item"><span class="info-label">Total Qty</span><span class="info-value" id="infoTotal">${data.total || 0}</span></div>
+    <div class="info-item"><span class="info-label">Jenis Barang</span><span class="info-value" id="infoJenis">0</span></div>
     <div class="info-item"><span class="info-label">Total Harga</span><span class="info-value" id="infoHarga" style="color:#1a6b2a">${formatRp(data.totalHarga || 0)}</span></div>
   `;
+}
+
+// ✅ Update stat Jenis Barang di info bar
+function updateStatJenis() {
+  const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
+  const inv = invoices[invoiceId];
+  const namaSet = new Set();
+  if (inv && inv.items)
+    inv.items.forEach((item) => {
+      if (item.nama) namaSet.add(item.nama.toLowerCase());
+    });
+  const el = document.getElementById("infoJenis");
+  if (el) el.textContent = namaSet.size;
 }
 
 function updateTotal() {
@@ -401,6 +414,8 @@ function updateTotal() {
   const h = document.getElementById("infoHarga");
   if (h) h.textContent = formatRp(totalH);
   updateTotalHargaDisplay();
+  updateStatJenis(); // ✅ refresh jenis setiap kali total diupdate
+  rebuildGlobalStock(); // ✅ sync ke globalStock
 }
 
 function updateTotalHargaDisplay() {
@@ -417,18 +432,52 @@ function updateTotalHargaDisplay() {
 }
 
 // ========================================================
-// ===== MODAL TAMBAH BARANG ==============================
+// ===== MODAL TAMBAH / EDIT BARANG =======================
 // ========================================================
 openTambahBtn.addEventListener("click", () => {
+  editRowIndex = null; // mode tambah baru
+  bukaModal();
+});
+
+function bukaModal(item = null) {
   ddNama.refresh();
   ddKategori.refresh();
   ddMerk.refresh();
-  ddLokasi.refresh(); // ← refresh lokasi dari linkedData terbaru
+  ddLokasi.refresh();
   subtotalVal.textContent = "Rp 0";
   autofillNotice.classList.add("hidden");
   errorMsg.textContent = "";
+
+  // ✅ Update judul modal sesuai mode
+  const modalTitle = document.querySelector(".modal-top-bar h3");
+  if (modalTitle) {
+    modalTitle.innerHTML = item
+      ? '<i class="bx bx-edit"></i> Edit Barang'
+      : '<i class="bx bx-package"></i> Tambah Barang';
+  }
+  const btnLabel = document.getElementById("simpanBtn");
+  if (btnLabel)
+    btnLabel.innerHTML = item
+      ? '<i class="bx bx-save"></i> Update'
+      : '<i class="bx bx-save"></i> Simpan';
+
+  if (item) {
+    // Isi form dengan data item yang diedit
+    document.getElementById("inputSKU").value = item.sku || "";
+    ddNama.setValue(item.nama || "");
+    ddMerk.setValue(item.merk || "");
+    ddKategori.setValue(item.kategori || "");
+    ddLokasi.setValue(item.lokasi || "");
+    document.getElementById("inputExpired").value =
+      item.expired !== "-" ? item.expired || "" : "";
+    inputHargaHPP.value = item.hargaHPP || "";
+    inputHargaJual.value = item.hargaJual || "";
+    inputStok.value = item.stok || "";
+    updateSubtotalPreview();
+  }
+
   modalOverlay.classList.add("active");
-});
+}
 
 document.getElementById("modalCloseX").addEventListener("click", tutupModal);
 batalBtn.addEventListener("click", tutupModal);
@@ -440,6 +489,7 @@ simpanBtn.addEventListener("click", simpanItem);
 function tutupModal() {
   closeSKUPanel();
   modalOverlay.classList.remove("active");
+  editRowIndex = null;
   clearForm();
 }
 
@@ -457,7 +507,7 @@ function clearForm() {
   ddNama.clear();
   ddKategori.clear();
   ddMerk.clear();
-  ddLokasi.clear(); // ← clear lokasi
+  ddLokasi.clear();
 }
 
 function simpanItem() {
@@ -465,13 +515,12 @@ function simpanItem() {
   const nama = ddNama.getValue();
   const merk = ddMerk.getValue();
   const kategori = ddKategori.getValue();
-  const lokasi = ddLokasi.getValue(); // ← AMBIL NILAI LOKASI
+  const lokasi = ddLokasi.getValue();
   const expired = document.getElementById("inputExpired").value || "-";
   const hargaHPP = inputHargaHPP.value.trim();
   const hargaJual = inputHargaJual.value.trim() || "0";
   const stok = inputStok.value.trim();
 
-  // ===== VALIDASI — lokasi wajib =====
   if (!sku || !nama || !merk || !kategori || !lokasi || !stok || !hargaHPP) {
     errorMsg.textContent =
       "Semua field bertanda * wajib diisi, termasuk Lokasi Inventori!";
@@ -482,11 +531,11 @@ function simpanItem() {
     return;
   }
 
-  // ===== AUTO-ADD KE LINKED DATA =====
+  // Auto-add ke linkedData
   autoAddToLinkedData("barang", nama);
   autoAddToLinkedData("kategori", kategori);
   autoAddToLinkedData("merk", merk);
-  autoAddToLinkedData("lokasi", lokasi); // ← auto-add lokasi baru jika belum ada
+  autoAddToLinkedData("lokasi", lokasi);
   autoAddSKUToLinkedData({ sku, nama, merk, kategori });
 
   const item = {
@@ -501,28 +550,58 @@ function simpanItem() {
     stok,
   };
 
-  // ===== SIMPAN KE INVOICES =====
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   if (!invoices[invoiceId])
     invoices[invoiceId] = { invoice: invoiceId, items: [] };
-  invoices[invoiceId].items.push(item);
-  localStorage.setItem("invoices", JSON.stringify(invoices));
 
-  syncToGlobalStock(item); // ← lokasi ikut disimpan di globalStock
-  updateTotal();
-  tambahBaris(item, true);
+  if (editRowIndex !== null) {
+    // ✅ MODE EDIT: ganti item di index yang ada
+    invoices[invoiceId].items[editRowIndex] = item;
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+    updateTotal();
+
+    // Rebuild seluruh tabel dari data
+    renderSemuaBaris();
+  } else {
+    // MODE TAMBAH BARU
+    invoices[invoiceId].items.push(item);
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+    updateTotal();
+    tambahBaris(item, true, invoices[invoiceId].items.length - 1);
+  }
+
   tutupModal();
 }
 
 // ========================================================
-// ===== RENDER BARIS TABEL (12 kolom) ====================
+// ===== RENDER ULANG SELURUH TABEL =======================
 // ========================================================
-function tambahBaris(item, removeEmpty = true) {
+function renderSemuaBaris() {
+  itemTableBody.innerHTML = "";
+  rowCount = 0;
+  const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
+  const inv = invoices[invoiceId];
+  if (!inv || !inv.items || inv.items.length === 0) {
+    const tr = document.createElement("tr");
+    tr.className = "empty-row";
+    tr.innerHTML =
+      '<td colspan="12">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>';
+    itemTableBody.appendChild(tr);
+    return;
+  }
+  inv.items.forEach((item, idx) => tambahBaris(item, false, idx));
+}
+
+// ========================================================
+// ===== RENDER BARIS TABEL (12 kolom + Edit) =============
+// ========================================================
+function tambahBaris(item, removeEmpty = true, itemIndex) {
   if (removeEmpty) itemTableBody.querySelector(".empty-row")?.remove();
   rowCount++;
   const subtotal =
     (parseFloat(item.hargaHPP) || 0) * (parseInt(item.stok) || 0);
   const tr = document.createElement("tr");
+  tr.dataset.itemIndex = itemIndex; // ✅ simpan index untuk keperluan edit
   tr.innerHTML = `
     <td>${rowCount}</td>
     <td><span class="sku-badge">${item.sku || "-"}</span></td>
@@ -535,12 +614,32 @@ function tambahBaris(item, removeEmpty = true) {
     <td>${formatRp(item.hargaJual || 0)}</td>
     <td>${item.stok}</td>
     <td style="font-weight:700;color:#1a6b2a">${formatRp(subtotal)}</td>
-    <td><button class="btn-hapus"><i class="bx bx-trash"></i> Hapus</button></td>
+    <td>
+      <div style="display:flex;gap:4px;justify-content:center;align-items:center">
+        <button class="btn-edit-item" title="Edit">
+          <i class="bx bx-edit"></i>
+        </button>
+        <button class="btn-hapus" title="Hapus">
+          <i class="bx bx-trash"></i>
+        </button>
+      </div>
+    </td>
   `;
+
+  // ✅ Tombol Edit
+  tr.querySelector(".btn-edit-item").addEventListener("click", () => {
+    editRowIndex = parseInt(tr.dataset.itemIndex);
+    const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
+    const currentItem = invoices[invoiceId]?.items?.[editRowIndex];
+    if (currentItem) bukaModal(currentItem);
+  });
+
+  // Tombol Hapus
   tr.querySelector(".btn-hapus").addEventListener("click", () => {
     rowToDelete = tr;
     confirmOverlay.classList.add("active");
   });
+
   itemTableBody.appendChild(tr);
 }
 
@@ -552,20 +651,19 @@ confirmYes.addEventListener("click", () => {
     const rows = Array.from(
       itemTableBody.querySelectorAll("tr:not(.empty-row)"),
     );
-    const idx = rows.indexOf(rowToDelete);
+    const idx = parseInt(rowToDelete.dataset.itemIndex);
     const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
-    if (invoices[invoiceId]?.items?.[idx]) {
-      removeFromGlobalStock(invoices[invoiceId].items[idx]);
+    if (invoices[invoiceId]?.items?.[idx] !== undefined) {
       invoices[invoiceId].items.splice(idx, 1);
       localStorage.setItem("invoices", JSON.stringify(invoices));
     }
-    rowToDelete.remove();
     updateTotal();
-    updateNomor();
+    renderSemuaBaris(); // Render ulang agar index sinkron
     rowToDelete = null;
   }
   confirmOverlay.classList.remove("active");
 });
+
 confirmNo.addEventListener("click", () => {
   rowToDelete = null;
   confirmOverlay.classList.remove("active");
@@ -576,23 +674,6 @@ confirmOverlay.addEventListener("click", (e) => {
     confirmOverlay.classList.remove("active");
   }
 });
-
-function updateNomor() {
-  const rows = itemTableBody.querySelectorAll("tr:not(.empty-row)");
-  if (rows.length === 0) {
-    const tr = document.createElement("tr");
-    tr.className = "empty-row";
-    tr.innerHTML =
-      '<td colspan="12">Belum ada barang — klik "+ Tambah Barang" untuk menambah</td>';
-    itemTableBody.appendChild(tr);
-    rowCount = 0;
-  } else {
-    rows.forEach((r, i) => {
-      r.cells[0].textContent = i + 1;
-    });
-    rowCount = rows.length;
-  }
-}
 
 // ========================================================
 // ===== NAVIGASI & SAFETY NET ============================

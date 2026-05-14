@@ -1,5 +1,4 @@
-// ===== INPUTBARANG.JS — REVISI: Scanner stabil, no hang =====
-// + Filter: Tahun Lalu & Custom Range
+// ===== INPUTBARANG.JS — REVISI: + sumJenis, + fix sync globalStok =====
 
 const loggedUser =
   (typeof window.loggedUser !== "undefined" && window.loggedUser) ||
@@ -41,9 +40,9 @@ let rowToDelete = null;
 let currentTab = "manual";
 
 // ===== CUSTOM RANGE STATE =====
-let customRangeActive = false; // flag: apakah sedang pakai custom range
-let customRangeFrom = null; // Date object
-let customRangeTo = null; // Date object
+let customRangeActive = false;
+let customRangeFrom = null;
+let customRangeTo = null;
 
 // ===== ELEMEN CUSTOM RANGE =====
 const filterWaktu = document.getElementById("filterWaktu");
@@ -55,16 +54,10 @@ const rangeBadge = document.getElementById("rangeBadge");
 const rangeBadgeText = document.getElementById("rangeBadgeText");
 
 // ========================================================
-// ===== SCANNER STATE — strict lifecycle =================
+// ===== SCANNER STATE ====================================
 // ========================================================
-const INV_SCAN = {
-  stream: null,
-  reader: null,
-  active: false,
-  done: false,
-};
+const INV_SCAN = { stream: null, reader: null, active: false, done: false };
 
-// ===== ZXING LOADER — load sekali =====
 let zxingLoadPromise = null;
 function loadZXing() {
   if (window.ZXing) return Promise.resolve();
@@ -83,11 +76,9 @@ function loadZXing() {
   return zxingLoadPromise;
 }
 
-// ===== STOP SCANNER — paksa bersih =====
 function stopInvScanner() {
   INV_SCAN.active = false;
   INV_SCAN.done = false;
-
   if (INV_SCAN.reader) {
     try {
       INV_SCAN.reader.reset();
@@ -100,7 +91,6 @@ function stopInvScanner() {
     } catch (_) {}
     INV_SCAN.stream = null;
   }
-
   const video = document.getElementById("cameraStream");
   if (video) {
     try {
@@ -108,10 +98,8 @@ function stopInvScanner() {
       video.srcObject = null;
     } catch (_) {}
   }
-
   const ph = document.getElementById("scanPlaceholder");
   if (ph) ph.style.display = "flex";
-
   setScanStatus("");
 }
 
@@ -173,13 +161,11 @@ function autoAddToLinkedData(key, value) {
 }
 
 // ========================================================
-// ===== DATE FILTER =====
+// ===== DATE FILTER ======================================
 // ========================================================
-
 function getDateRange(filter) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
   switch (filter) {
     case "today":
       return { from: today, to: new Date() };
@@ -214,23 +200,17 @@ function getDateRange(filter) {
         from: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
         to: new Date(),
       };
-
-    // ===== BARU: Tahun Lalu =====
     case "lastyear":
       return {
-        from: new Date(now.getFullYear() - 1, 0, 1), // 1 Jan tahun lalu
-        to: new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59), // 31 Des tahun lalu
+        from: new Date(now.getFullYear() - 1, 0, 1),
+        to: new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59),
       };
-
-    // ===== BARU: Custom Range =====
     case "custom":
-      if (customRangeActive && customRangeFrom && customRangeTo) {
+      if (customRangeActive && customRangeFrom && customRangeTo)
         return { from: customRangeFrom, to: customRangeTo };
-      }
-      return null; // belum diisi → all time
-
+      return null;
     default:
-      return null; // all time
+      return null;
   }
 }
 
@@ -240,7 +220,6 @@ function isInRange(tanggalStr, range) {
   return d >= range.from && d <= range.to;
 }
 
-// ===== FORMAT TANGGAL UNTUK BADGE =====
 function formatDateShort(date) {
   return date.toLocaleDateString("id-ID", {
     day: "numeric",
@@ -249,13 +228,10 @@ function formatDateShort(date) {
   });
 }
 
-// ===== TAMPIL / SEMBUNYIKAN PANEL CUSTOM RANGE =====
+// ===== CUSTOM RANGE PANEL =====
 filterWaktu.addEventListener("change", () => {
-  const val = filterWaktu.value;
-
-  if (val === "custom") {
+  if (filterWaktu.value === "custom") {
     customRangePanel.classList.add("visible");
-    // Isi default: dari awal tahun ini sampai hari ini
     if (!customFromEl.value) {
       const now = new Date();
       customFromEl.value = new Date(now.getFullYear(), 0, 1)
@@ -271,37 +247,28 @@ filterWaktu.addEventListener("change", () => {
   }
 });
 
-// ===== TERAPKAN CUSTOM RANGE =====
 btnApplyRange.addEventListener("click", () => {
   const fromVal = customFromEl.value;
   const toVal = customToEl.value;
-
   if (!fromVal || !toVal) {
     alert("Pilih tanggal dari dan sampai terlebih dahulu.");
     return;
   }
-
   const fromDate = new Date(fromVal + "T00:00:00");
   const toDate = new Date(toVal + "T23:59:59");
-
   if (fromDate > toDate) {
     alert("Tanggal 'Dari' tidak boleh lebih besar dari 'Sampai'.");
     return;
   }
-
   customRangeFrom = fromDate;
   customRangeTo = toDate;
   customRangeActive = true;
-
-  // Tampilkan badge
   rangeBadgeText.textContent = `${formatDateShort(fromDate)} – ${formatDateShort(toDate)}`;
   rangeBadge.classList.add("visible");
   customRangePanel.classList.remove("visible");
-
   renderTable();
 });
 
-// ===== HAPUS BADGE / RESET CUSTOM =====
 rangeBadge.addEventListener("click", () => {
   customRangeActive = false;
   customRangeFrom = null;
@@ -311,7 +278,9 @@ rangeBadge.addEventListener("click", () => {
   renderTable();
 });
 
-// ===== HITUNG TOTAL HARGA =====
+// ========================================================
+// ===== HITUNG TOTAL HARGA & JENIS =======================
+// ========================================================
 function hitungTotalHarga(id) {
   const inv = allInvoices[id];
   if (!inv || !inv.items) return 0;
@@ -331,11 +300,22 @@ function renderTable() {
     isInRange(inv.tanggal, range),
   );
 
+  // ✅ Hitung Total Jenis Barang (nama unik dari semua item di invoice yang terfilter)
+  const namaSet = new Set();
+  filtered.forEach((inv) => {
+    if (inv.items && Array.isArray(inv.items)) {
+      inv.items.forEach((item) => {
+        if (item.nama) namaSet.add(item.nama.toLowerCase());
+      });
+    }
+  });
+
   document.getElementById("sumTransaksi").textContent = filtered.length;
   document.getElementById("sumBarang").textContent = filtered.reduce(
     (s, inv) => s + (parseInt(inv.total) || 0),
     0,
   );
+  document.getElementById("sumJenis").textContent = namaSet.size; // ✅ BARU
   document.getElementById("sumHarga").textContent = formatRp(
     filtered.reduce((s, inv) => s + hitungTotalHarga(inv.invoice), 0),
   );
@@ -403,13 +383,11 @@ window.switchTab = function (tab) {
 document.getElementById("btnOpenCam").addEventListener("click", async () => {
   stopInvScanner();
   setScanStatus("loading", "Memuat scanner...");
-
   try {
     await loadZXing();
     const reader = new ZXing.BrowserMultiFormatReader();
     INV_SCAN.reader = reader;
     INV_SCAN.done = false;
-
     const video = document.getElementById("cameraStream");
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -421,10 +399,8 @@ document.getElementById("btnOpenCam").addEventListener("click", async () => {
     INV_SCAN.stream = stream;
     INV_SCAN.active = true;
     video.srcObject = stream;
-
     document.getElementById("scanPlaceholder").style.display = "none";
     setScanStatus("scanning", "Arahkan ke barcode invoice...");
-
     reader.decodeFromStream(stream, video, (result) => {
       if (INV_SCAN.done || !INV_SCAN.active) return;
       if (result) {
@@ -443,7 +419,6 @@ document.getElementById("btnOpenCam").addEventListener("click", async () => {
   }
 });
 
-// ===== GALLERY =====
 document
   .getElementById("galleryInput")
   .addEventListener("change", async function (e) {
@@ -451,7 +426,6 @@ document
     if (!file) return;
     this.value = "";
     setScanStatus("loading", "Membaca barcode dari gambar...");
-
     try {
       await loadZXing();
       const reader = new ZXing.BrowserMultiFormatReader();
@@ -558,6 +532,8 @@ function simpanData() {
 document.getElementById("confirmYes").addEventListener("click", () => {
   if (rowToDelete) {
     const id = rowToDelete.dataset.invoiceId;
+    // ✅ Saat hapus invoice: bersihkan juga globalStock terkait
+    hapusInvoiceDariGlobalStok(id);
     delete allInvoices[id];
     localStorage.setItem("invoices", JSON.stringify(allInvoices));
     rowToDelete = null;
@@ -565,6 +541,7 @@ document.getElementById("confirmYes").addEventListener("click", () => {
   }
   confirmOverlay.classList.remove("active");
 });
+
 document.getElementById("confirmNo").addEventListener("click", () => {
   rowToDelete = null;
   confirmOverlay.classList.remove("active");
@@ -575,6 +552,25 @@ confirmOverlay.addEventListener("click", (e) => {
     confirmOverlay.classList.remove("active");
   }
 });
+
+// ✅ Hapus entri globalStock yang berasal dari invoice tertentu
+function hapusInvoiceDariGlobalStok(invoiceId) {
+  const gs = JSON.parse(localStorage.getItem("globalStock") || "{}");
+  // Ambil item dari invoice ini
+  const inv = allInvoices[invoiceId];
+  if (!inv || !inv.items) return;
+  inv.items.forEach((item) => {
+    const key = item.sku || item.nama;
+    if (gs[key]) {
+      gs[key].totalStok = Math.max(
+        0,
+        (parseInt(gs[key].totalStok) || 0) - (parseInt(item.stok) || 0),
+      );
+      if (gs[key].totalStok <= 0) delete gs[key];
+    }
+  });
+  localStorage.setItem("globalStock", JSON.stringify(gs));
+}
 
 // ===== TUTUP MODAL =====
 function tutupModal() {

@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Input Barang | Invenz</title>
 
-    <!-- Tambahan style untuk custom date range picker -->
     <style>
         /* ===== CUSTOM DATE RANGE PANEL ===== */
         .custom-range-panel {
@@ -82,6 +81,47 @@
         }
         .range-badge.visible { display: flex; }
         .range-badge i { font-size: 13px !important; }
+
+        /* ===== SUMMARY STRIP — 4 kolom ===== */
+        .summary-strip {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            width: 90%;
+            background: white;
+            border: 1px solid #111;
+            border-radius: 10px;
+            box-shadow: 3px 4px 0 0 #111;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .summary-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 12px;
+            gap: 2px;
+        }
+        .summary-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: #888;
+            text-align: center;
+        }
+        .summary-val {
+            font-size: 18px;
+            font-weight: 800;
+            color: rgb(16,44,168);
+        }
+        .summary-divider {
+            width: 1px;
+            height: 40px;
+            background: #eee;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -142,7 +182,7 @@
             </select>
         </div>
 
-        <!-- Custom date range panel (muncul jika pilih "custom") -->
+        <!-- Custom date range panel -->
         <div class="custom-range-panel" id="customRangePanel">
             <label>Dari</label>
             <input type="date" id="customFrom">
@@ -154,7 +194,7 @@
             </button>
         </div>
 
-        <!-- Badge menampilkan rentang custom yang aktif -->
+        <!-- Badge custom range aktif -->
         <div class="range-badge" id="rangeBadge" title="Klik untuk hapus filter custom">
             <i class="bx bx-calendar"></i>
             <span id="rangeBadgeText">-</span>
@@ -167,7 +207,7 @@
         </button>
     </div>
 
-    <!-- Summary Bar -->
+    <!-- Summary Strip — 4 stat -->
     <div class="summary-strip" id="summaryStrip">
         <div class="summary-item">
             <span class="summary-label">Total Transaksi</span>
@@ -175,8 +215,14 @@
         </div>
         <div class="summary-divider"></div>
         <div class="summary-item">
-            <span class="summary-label">Total Barang</span>
+            <span class="summary-label">Total Barang (Qty)</span>
             <span class="summary-val" id="sumBarang">0</span>
+        </div>
+        <div class="summary-divider"></div>
+        <!-- ✅ BARU: Total Jenis Barang -->
+        <div class="summary-item">
+            <span class="summary-label">Jenis Barang</span>
+            <span class="summary-val" id="sumJenis">0</span>
         </div>
         <div class="summary-divider"></div>
         <div class="summary-item">
@@ -206,7 +252,7 @@
         </table>
     </div>
 
-    <!-- ===== MODAL INPUT BARANG ===== -->
+    <!-- ===== MODAL INPUT INVOICE ===== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal modal-input">
             <div class="modal-top-bar">
@@ -214,7 +260,6 @@
                 <button class="modal-close-x" id="modalCloseX"><i class="bx bx-x"></i></button>
             </div>
 
-            <!-- Scan / Manual toggle -->
             <div class="scan-toggle">
                 <button class="scan-tab active" id="tabManual" onclick="switchTab('manual')">
                     <i class="bx bx-edit"></i> Manual
@@ -224,7 +269,7 @@
                 </button>
             </div>
 
-            <!-- Manual input section -->
+            <!-- Manual -->
             <div class="tab-panel" id="panelManual">
                 <div class="modal-form">
                     <div class="form-row">
@@ -256,14 +301,12 @@
                 </div>
             </div>
 
-            <!-- Scan section -->
+            <!-- Scan -->
             <div class="tab-panel hidden" id="panelScan">
                 <div class="scan-area">
                     <div class="scan-box" id="scanBox">
                         <video id="cameraStream" autoplay playsinline></video>
-                        <div class="scan-frame">
-                            <div class="scan-line"></div>
-                        </div>
+                        <div class="scan-frame"><div class="scan-line"></div></div>
                         <div class="scan-placeholder" id="scanPlaceholder">
                             <i class="bx bx-barcode-reader"></i>
                             <p>Kamera belum aktif</p>

@@ -9,6 +9,27 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Detail Invoice | Invenz</title>
+
+    <style>
+        /* ===== TOMBOL EDIT ITEM ===== */
+        .btn-edit-item {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid black;
+            border-radius: 5px;
+            box-shadow: 2px 3px 0 0 black;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-edit-item:hover { transform: scale(0.9); }
+        .btn-edit-item i { font-size: 13px !important; }
+    </style>
 </head>
 <body>
 
@@ -21,10 +42,14 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
+    <!--
+        Info bar: Invoice | Tanggal | Supplier | Total Qty | Jenis Barang | Total Harga
+        ✅ "Jenis Barang" (id="infoJenis") dirender oleh JS
+    -->
     <div class="invoice-info" id="invoiceInfo"></div>
 
     <div class="nav-controll">
-        <p>* klik tambah barang untuk menambah item</p>
+        <p>* klik tambah barang untuk menambah item · klik ✏️ untuk edit</p>
         <div class="tambah-btn" id="openTambahBtn">+ Tambah Barang</div>
     </div>
 
@@ -59,7 +84,7 @@
         <strong id="totalHargaDisplay">Rp 0</strong>
     </div>
 
-    <!-- ===== MODAL TAMBAH BARANG ===== -->
+    <!-- ===== MODAL TAMBAH / EDIT BARANG ===== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal modal-tambah">
             <div class="modal-top-bar">
@@ -157,7 +182,7 @@
                     </div>
                 </div>
 
-                <!-- ===== LOKASI INVENTORI — linked to linkedData.lokasi ===== -->
+                <!-- Lokasi Inventori -->
                 <div class="form-row">
                     <label>Lokasi Inventori <span class="req">*</span></label>
                     <div class="cd-wrapper" id="cdLokasi">
