@@ -9,6 +9,43 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Invoice Keluar | Invenz</title>
+
+    <style>
+        /* ===== PAYMENT BADGE di info bar ===== */
+        .info-payment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #111;
+        }
+        .pay-cash  { background: #d4f7e7; color: #0a6640; }
+        .pay-qris  { background: #ede9fe; color: #5b21b6; }
+        .pay-other { background: #fef3c7; color: #92400e; }
+
+        /* ===== TOTAL BAR bawah ===== */
+        .total-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #111;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 90;
+        }
+        .total-bar strong { color: aqua; font-size: 15px; }
+
+        /* Harga di tabel */
+        .col-harga-item { font-weight: 700; color: #1a6b2a; }
+    </style>
 </head>
 <body>
 
@@ -48,34 +85,13 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
-    <!--
-        Info bar invoice — diisi JS.
-        JS wajib merender kolom "Metode Bayar" di sini.
-        Contoh output yang diharapkan dari invoiceKeluar.js:
-
-        <div class="info-item">
-            <span class="info-label">Invoice</span>
-            <span class="info-val">INV-OUT-001</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Tanggal</span>
-            <span class="info-val">12 Mei 2025</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Penerima</span>
-            <span class="info-val">Gudang B</span>
-        </div>
-        <div class="info-item info-payment">
-            <span class="info-label"><i class="bx bx-credit-card"></i> Metode Bayar</span>
-            <span class="info-val payment-badge">Cash</span>
-        </div>
-    -->
+    <!-- Info Bar: Invoice | Tanggal | Customer | Telepon | Payment | Total -->
     <div class="invoice-info" id="invoiceInfo">
-        <!-- Diisi JS — termasuk payment info -->
+        <!-- Diisi JS -->
     </div>
 
     <div class="nav-controll">
-        <p>* klik stock out barang untuk mengeluarkan barang dari stok</p>
+        <p>* klik "Stock Out Barang" untuk mengeluarkan barang dari stok</p>
         <button class="tambah-btn" id="btnAddItem">+ Stock Out Barang</button>
     </div>
 
@@ -89,21 +105,25 @@
                     <th>Merk</th>
                     <th>Lokasi Inventori</th>
                     <th>Invoice Asal</th>
+                    <th>Harga Jual</th>
                     <th>Jumlah Keluar</th>
+                    <th>Subtotal</th>
                     <th>Sisa Stok</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr class="empty-row">
-                    <td colspan="9">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
+                    <td colspan="11">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div class="summary-bar" id="summaryBar">
+    <!-- Total bar bawah -->
+    <div class="total-bar" id="totalBar">
         <span>Total barang keluar: <strong id="summaryTotal">0</strong> item</span>
+        <span>Total nilai: <strong id="summaryHarga">Rp 0</strong></span>
     </div>
 
     <!-- Modal Pilih Barang -->

@@ -1,78 +1,48 @@
+"use strict";
+
 // ===== AUTH =====
-const loggedUser =
-  (typeof window.loggedUser !== "undefined" && window.loggedUser) ||
-  localStorage.getItem("loggedUser") ||
-  "Admin";
+if (!localStorage.getItem("isLoggedIn")) window.location.href = "login.html";
 
-if (!localStorage.getItem("isLoggedIn")) {
-  window.location.href = "login.html";
-}
-
-// ===== AMBIL ID INVOICE DARI URL =====
-const params = new URLSearchParams(window.location.search);
-const invoiceId = params.get("id");
-
-if (!invoiceId) window.location.href = "stockOut.html";
-
-const stockOuts = JSON.parse(localStorage.getItem("stockOuts") || "{}");
-const invoiceData = stockOuts[invoiceId];
-
-if (!invoiceData) window.location.href = "stockOut.html";
-
-// ===== USER INFO =====
+const loggedUser = localStorage.getItem("loggedUser") || "Admin";
 document.getElementById("sidebarUsername").textContent = loggedUser;
 document.getElementById("sidebarAvatar").textContent = loggedUser
   .charAt(0)
   .toUpperCase();
 
-// ===== RENDER INFO (sama seperti invoice masuk) =====
-function renderInfo(data) {
-  const invoiceInfo = document.getElementById("invoiceInfo");
-  if (!invoiceInfo) return;
-  invoiceInfo.innerHTML = `
-    <div class="info-item">
-      <span class="info-label">Invoice</span>
-      <span class="info-value">${data.invoice}</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Tanggal Keluar</span>
-      <span class="info-value">${data.tanggal}</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Penerima / Tujuan</span>
-      <span class="info-value">${data.penerima}</span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Total Barang Keluar</span>
-      <span class="info-value" id="infoTotal">${data.total || 0}</span>
-    </div>
-  `;
+// ===== AMBIL ID DARI URL =====
+const params = new URLSearchParams(window.location.search);
+const invoiceId = params.get("id");
+if (!invoiceId) window.location.href = "stockOut.html";
+
+// ===== STORAGE KEY (sama dengan stockOut.js) =====
+const STOCKOUT_KEY = "stockOuts_v2";
+
+// ===== LOAD DATA INVOICE INI =====
+function loadStockOuts() {
+  try {
+    return JSON.parse(localStorage.getItem(STOCKOUT_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveStockOuts(list) {
+  localStorage.setItem(STOCKOUT_KEY, JSON.stringify(list));
+}
+function getThisInvoice() {
+  return loadStockOuts().find((s) => s.id === invoiceId) || null;
 }
 
-renderInfo(invoiceData);
-
-// Update navTitle
-const navTitle = document.getElementById("navTitle");
-if (navTitle) navTitle.textContent = invoiceData.invoice;
-
-// ===== BACK BUTTON =====
-document.getElementById("backBtn").addEventListener("click", () => {
-  window.location.href = "stockOut.html";
-});
+const invoiceData = getThisInvoice();
+if (!invoiceData) window.location.href = "stockOut.html";
 
 // ===== SIDEBAR =====
 const sidebar = document.getElementById("sidebar");
-const overlay = document.getElementById("sidebarOverlay");
-document.getElementById("hamburger") &&
-  document.getElementById("hamburger").addEventListener("click", () => {
-    sidebar.classList.add("open");
-    overlay.classList.add("active");
-  });
+const sidebarOverlay = document.getElementById("sidebarOverlay");
 document.getElementById("sidebarClose").addEventListener("click", closeSidebar);
-overlay.addEventListener("click", closeSidebar);
+sidebarOverlay.addEventListener("click", closeSidebar);
 function closeSidebar() {
   sidebar.classList.remove("open");
-  overlay.classList.remove("active");
+  sidebarOverlay.classList.remove("active");
 }
 
 // ===== LOGOUT =====
@@ -82,56 +52,215 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
   window.location.href = "login.html";
 });
 
-// ===== ELEMEN DOM =====
+// ===== BACK =====
+document.getElementById("backBtn").addEventListener("click", () => {
+  window.location.href = "stockOut.html";
+});
+
+// ===== FORMAT HELPERS =====
+function formatRp(num) {
+  if (!num || num === 0) return "Rp 0";
+  return "Rp " + parseInt(num).toLocaleString("id-ID");
+}
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  const [y, m, d] = dateStr.split("-");
+  const bulan = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  return `${parseInt(d)} ${bulan[parseInt(m) - 1]} ${y}`;
+}
+
+// ===== PAYMENT BADGE =====
+function paymentBadgeHtml(paymentId, paymentNama) {
+  const map = {
+    pay_default_cash: { icon: "💵", cls: "pay-cash" },
+    pay_default_qris: { icon: "📱", cls: "pay-qris" },
+  };
+  const cfg = map[paymentId] || { icon: "💰", cls: "pay-other" };
+  return `<span class="info-payment-badge ${cfg.cls}">${cfg.icon} ${paymentNama || "—"}</span>`;
+}
+
+// ===== RENDER INFO BAR =====
+function renderInfo() {
+  const data = getThisInvoice();
+  if (!data) return;
+
+  document.getElementById("navTitle").textContent = data.invoice;
+
+  const totalItem = (data.items || []).reduce(
+    (s, i) => s + (parseInt(i.jumlahKeluar) || 0),
+    0,
+  );
+  const totalHarga = (data.items || []).reduce(
+    (s, i) =>
+      s +
+      parseFloat(i.hargaJual || i.hargaHPP || 0) *
+        (parseInt(i.jumlahKeluar) || 0),
+    0,
+  );
+
+  document.getElementById("invoiceInfo").innerHTML = `
+        <div class="info-item">
+            <span class="info-label">Invoice</span>
+            <span class="info-val"><strong>${data.invoice}</strong></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Tanggal</span>
+            <span class="info-val">${formatDate(data.tanggal)}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Customer</span>
+            <span class="info-val"><strong>${data.penerima || "—"}</strong></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">No. Telepon</span>
+            <span class="info-val">${data.telepon || '<span style="color:#bbb">—</span>'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Metode Bayar</span>
+            <span class="info-val">${paymentBadgeHtml(data.paymentId, data.paymentNama)}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Total Barang</span>
+            <span class="info-val" id="infoTotal"><strong>${totalItem}</strong> item</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Total Nilai</span>
+            <span class="info-val" id="infoHarga" style="color:#1a6b2a;font-weight:700">${formatRp(totalHarga)}</span>
+        </div>
+    `;
+}
+
+// ===== UPDATE SUMMARY BAR BAWAH =====
+function updateSummaryBar() {
+  const data = getThisInvoice();
+  if (!data) return;
+  const totalItem = (data.items || []).reduce(
+    (s, i) => s + (parseInt(i.jumlahKeluar) || 0),
+    0,
+  );
+  const totalHarga = (data.items || []).reduce(
+    (s, i) =>
+      s +
+      parseFloat(i.hargaJual || i.hargaHPP || 0) *
+        (parseInt(i.jumlahKeluar) || 0),
+    0,
+  );
+  document.getElementById("summaryTotal").textContent = totalItem;
+  document.getElementById("summaryHarga").textContent = formatRp(totalHarga);
+}
+
+// ============================================================
+// ===== TABEL ITEMS ==========================================
+// ============================================================
 const tableBody = document.getElementById("tableBody");
-const summaryTotal = document.getElementById("summaryTotal");
-const modalOverlay = document.getElementById("modalOverlay");
-const jumlahOverlay = document.getElementById("jumlahOverlay");
-const confirmOverlay = document.getElementById("confirmOverlay");
-const stokList = document.getElementById("stokList");
-const searchBarang = document.getElementById("searchBarang");
-const inputJumlah = document.getElementById("inputJumlah");
-const barangPreview = document.getElementById("barangPreview");
-const stokInfo = document.getElementById("stokInfo");
-const errorMsgJumlah = document.getElementById("errorMsgJumlah");
-
-let selectedBarang = null;
-let rowToDelete = null;
-let allGlobalStok = [];
 let rowCount = 0;
+let rowToDelete = null;
+let selectedBarang = null;
 
-// ===== BUKA MODAL PILIH BARANG =====
+function renderTableItems() {
+  tableBody.innerHTML = "";
+  rowCount = 0;
+  const data = getThisInvoice();
+  if (!data || !data.items || !data.items.length) {
+    tableBody.innerHTML = `<tr class="empty-row">
+            <td colspan="11">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
+        </tr>`;
+    return;
+  }
+  data.items.forEach((item, idx) => {
+    rowCount++;
+    tambahBarisTabel(item, idx, false);
+  });
+}
+
+function tambahBarisTabel(item, idx, prepend = false) {
+  const hargaJual = parseFloat(item.hargaJual || item.hargaHPP || 0);
+  const jumlah = parseInt(item.jumlahKeluar) || 0;
+  const subtotal = hargaJual * jumlah;
+  const sisaClass = item.sisaStok <= 5 ? "stok-sisa-low" : "stok-sisa-ok";
+
+  if (prepend) {
+    // Hapus empty row jika ada
+    const emptyRow = tableBody.querySelector(".empty-row");
+    if (emptyRow) emptyRow.remove();
+    rowCount++;
+  }
+
+  const tr = document.createElement("tr");
+  tr.dataset.idx = idx;
+  tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td><strong>${item.nama}</strong></td>
+        <td><span class="badge badge-blue">${item.kategori || "—"}</span></td>
+        <td>${item.merk || "—"}</td>
+        <td>${item.lokasi || "—"}</td>
+        <td><span class="badge badge-orange">${item.invoiceAsal || "—"}</span></td>
+        <td class="col-harga-item">${formatRp(hargaJual)}</td>
+        <td><strong>${jumlah}</strong></td>
+        <td class="col-harga-item">${formatRp(subtotal)}</td>
+        <td class="${sisaClass}">${item.sisaStok}</td>
+        <td>
+            <button class="btn-hapus btn-kembalikan">
+                <i class="bx bx-undo"></i> Kembalikan
+            </button>
+        </td>
+    `;
+  tr.querySelector(".btn-kembalikan").addEventListener("click", () => {
+    rowToDelete = idx;
+    document.getElementById("confirmOverlay").classList.add("active");
+  });
+
+  tableBody.appendChild(tr);
+}
+
+// ============================================================
+// ===== PILIH BARANG — MODAL =================================
+// ============================================================
+let allGlobalStok = [];
+
 document.getElementById("btnAddItem").addEventListener("click", () => {
-  buildGlobalStokList();
-  searchBarang.value = "";
-  modalOverlay.classList.add("active");
+  buildStokList();
+  document.getElementById("searchBarang").value = "";
+  document.getElementById("modalOverlay").classList.add("active");
 });
-
 document.getElementById("batalBtn").addEventListener("click", () => {
-  modalOverlay.classList.remove("active");
+  document.getElementById("modalOverlay").classList.remove("active");
 });
-modalOverlay.addEventListener("click", (e) => {
-  if (e.target === modalOverlay) modalOverlay.classList.remove("active");
+document.getElementById("modalOverlay").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("modalOverlay"))
+    document.getElementById("modalOverlay").classList.remove("active");
 });
 
-// ===== SEARCH =====
-searchBarang.addEventListener("input", function () {
+// Search
+document.getElementById("searchBarang").addEventListener("input", function () {
   const kw = this.value.toLowerCase();
   const filtered = kw
     ? allGlobalStok.filter(
         (b) =>
           b.nama.toLowerCase().includes(kw) ||
-          b.kategori.toLowerCase().includes(kw) ||
-          b.merk.toLowerCase().includes(kw) ||
-          b.invoiceAsal.toLowerCase().includes(kw) ||
-          b.lokasi.toLowerCase().includes(kw),
+          (b.kategori || "").toLowerCase().includes(kw) ||
+          (b.merk || "").toLowerCase().includes(kw) ||
+          (b.invoiceAsal || "").toLowerCase().includes(kw) ||
+          (b.lokasi || "").toLowerCase().includes(kw),
       )
     : allGlobalStok;
   renderStokList(filtered);
 });
 
-// ===== BUILD STOK LIST =====
-function buildGlobalStokList() {
+function buildStokList() {
   const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
   allGlobalStok = [];
   Object.values(invoices).forEach((inv) => {
@@ -140,9 +269,12 @@ function buildGlobalStokList() {
       allGlobalStok.push({
         invoiceAsal: inv.invoice,
         nama: item.nama,
-        kategori: item.kategori,
-        merk: item.merk,
-        lokasi: item.lokasi,
+        kategori: item.kategori || "—",
+        merk: item.merk || "—",
+        lokasi: item.lokasi || "—",
+        sku: item.sku || "—",
+        hargaHPP: item.hargaHPP || 0,
+        hargaJual: item.hargaJual || 0,
         stok: parseInt(item.stok) || 0,
       });
     });
@@ -151,8 +283,9 @@ function buildGlobalStokList() {
 }
 
 function renderStokList(list) {
+  const stokList = document.getElementById("stokList");
   stokList.innerHTML = "";
-  if (list.length === 0) {
+  if (!list.length) {
     stokList.innerHTML = `<div class="stok-empty-msg">Tidak ada barang yang ditemukan</div>`;
     return;
   }
@@ -167,25 +300,27 @@ function renderStokList(list) {
     const badgeLabel = isEmpty
       ? "Habis"
       : isLow
-        ? `Stok: ${barang.stok} (menipis)`
+        ? `Stok: ${barang.stok} ⚠️`
         : `Stok: ${barang.stok}`;
+
     const div = document.createElement("div");
     div.className = "stok-item";
     div.innerHTML = `
-      <div class="stok-item-info">
-        <div class="stok-item-name">${barang.nama}</div>
-        <div class="stok-item-meta">
-          <span>📂 ${barang.kategori}</span>
-          <span>🏷️ ${barang.merk}</span>
-          <span>📍 ${barang.lokasi}</span>
-          <span>🧾 ${barang.invoiceAsal}</span>
-        </div>
-      </div>
-      <div class="stok-item-right">
-        <span class="stok-badge ${badgeClass}">${badgeLabel}</span>
-        <button class="btn-pilih" ${isEmpty ? "disabled" : ""}>Pilih</button>
-      </div>
-    `;
+            <div class="stok-item-info">
+                <div class="stok-item-name">${barang.nama}</div>
+                <div class="stok-item-meta">
+                    <span>📂 ${barang.kategori}</span>
+                    <span>🏷️ ${barang.merk}</span>
+                    <span>📍 ${barang.lokasi}</span>
+                    <span>🧾 ${barang.invoiceAsal}</span>
+                    <span style="color:#1a6b2a;font-weight:600">💰 ${formatRp(barang.hargaJual || barang.hargaHPP)}</span>
+                </div>
+            </div>
+            <div class="stok-item-right">
+                <span class="stok-badge ${badgeClass}">${badgeLabel}</span>
+                <button class="btn-pilih" ${isEmpty ? "disabled" : ""}>Pilih</button>
+            </div>
+        `;
     if (!isEmpty) {
       div
         .querySelector(".btn-pilih")
@@ -195,333 +330,180 @@ function renderStokList(list) {
   });
 }
 
-// ===== MODAL JUMLAH =====
+// ============================================================
+// ===== MODAL JUMLAH =========================================
+// ============================================================
 function bukaModalJumlah(barang) {
   selectedBarang = barang;
-  inputJumlah.value = 1;
-  inputJumlah.max = barang.stok;
-  errorMsgJumlah.textContent = "";
-  barangPreview.innerHTML = `
-    <strong>${barang.nama}</strong><br>
-    Kategori: ${barang.kategori} &nbsp;|&nbsp; Merk: ${barang.merk}<br>
-    Lokasi: ${barang.lokasi} &nbsp;|&nbsp; Invoice Asal: ${barang.invoiceAsal}
-  `;
-  stokInfo.textContent = `Stok tersedia: ${barang.stok} item`;
-  modalOverlay.classList.remove("active");
-  jumlahOverlay.classList.add("active");
+  document.getElementById("inputJumlah").value = 1;
+  document.getElementById("inputJumlah").max = barang.stok;
+  document.getElementById("errorMsgJumlah").textContent = "";
+  document.getElementById("barangPreview").innerHTML = `
+        <strong>${barang.nama}</strong><br>
+        Kategori: ${barang.kategori} &nbsp;|&nbsp; Merk: ${barang.merk}<br>
+        Lokasi: ${barang.lokasi} &nbsp;|&nbsp; Invoice Asal: ${barang.invoiceAsal}<br>
+        <span style="color:#1a6b2a;font-weight:700">Harga Jual: ${formatRp(barang.hargaJual || barang.hargaHPP)}</span>
+    `;
+  document.getElementById("stokInfo").textContent =
+    `Stok tersedia: ${barang.stok} item`;
+
+  document.getElementById("modalOverlay").classList.remove("active");
+  document.getElementById("jumlahOverlay").classList.add("active");
 }
 
 document.getElementById("qtyMinus").addEventListener("click", () => {
-  const val = parseInt(inputJumlah.value) || 1;
-  if (val > 1) inputJumlah.value = val - 1;
+  const val = parseInt(document.getElementById("inputJumlah").value) || 1;
+  if (val > 1) document.getElementById("inputJumlah").value = val - 1;
 });
 document.getElementById("qtyPlus").addEventListener("click", () => {
-  const val = parseInt(inputJumlah.value) || 1;
-  if (selectedBarang && val < selectedBarang.stok) inputJumlah.value = val + 1;
+  const val = parseInt(document.getElementById("inputJumlah").value) || 1;
+  if (selectedBarang && val < selectedBarang.stok)
+    document.getElementById("inputJumlah").value = val + 1;
 });
 
 document.getElementById("batalJumlahBtn").addEventListener("click", () => {
-  jumlahOverlay.classList.remove("active");
+  document.getElementById("jumlahOverlay").classList.remove("active");
   selectedBarang = null;
-  modalOverlay.classList.add("active");
+  document.getElementById("modalOverlay").classList.add("active");
 });
-jumlahOverlay.addEventListener("click", (e) => {
-  if (e.target === jumlahOverlay) {
-    jumlahOverlay.classList.remove("active");
+document.getElementById("jumlahOverlay").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("jumlahOverlay")) {
+    document.getElementById("jumlahOverlay").classList.remove("active");
     selectedBarang = null;
   }
 });
 
-// ===== KONFIRMASI OUT =====
+// ============================================================
+// ===== KONFIRMASI OUT =======================================
+// ============================================================
 document.getElementById("konfirmasiOutBtn").addEventListener("click", () => {
-  const jumlah = parseInt(inputJumlah.value);
+  const jumlah = parseInt(document.getElementById("inputJumlah").value);
+  const errEl = document.getElementById("errorMsgJumlah");
+
   if (!jumlah || jumlah < 1) {
-    errorMsgJumlah.textContent = "Jumlah harus minimal 1!";
+    errEl.textContent = "Jumlah harus minimal 1!";
     return;
   }
   if (jumlah > selectedBarang.stok) {
-    errorMsgJumlah.textContent = `Melebihi stok tersedia (${selectedBarang.stok})!`;
+    errEl.textContent = `Melebihi stok tersedia (${selectedBarang.stok})!`;
     return;
   }
 
-  kurangiStok(
+  // Kurangi stok di invoices
+  kurangiStokInvoice(
     selectedBarang.invoiceAsal,
     selectedBarang.nama,
     selectedBarang.kategori,
     jumlah,
   );
 
-  const item = {
+  const newItem = {
     invoiceAsal: selectedBarang.invoiceAsal,
     nama: selectedBarang.nama,
     kategori: selectedBarang.kategori,
     merk: selectedBarang.merk,
     lokasi: selectedBarang.lokasi,
+    sku: selectedBarang.sku,
+    hargaHPP: selectedBarang.hargaHPP,
+    hargaJual: selectedBarang.hargaJual || selectedBarang.hargaHPP,
     jumlahKeluar: jumlah,
     sisaStok: selectedBarang.stok - jumlah,
   };
 
-  const so = JSON.parse(localStorage.getItem("stockOuts") || "{}");
-  if (!so[invoiceId].items) so[invoiceId].items = [];
-  so[invoiceId].items.push(item);
-  so[invoiceId].total = so[invoiceId].items.length;
-  localStorage.setItem("stockOuts", JSON.stringify(so));
+  // Simpan ke stockOuts_v2
+  const list = loadStockOuts();
+  const soIdx = list.findIndex((s) => s.id === invoiceId);
+  if (soIdx === -1) {
+    window.location.href = "stockOut.html";
+    return;
+  }
+  if (!list[soIdx].items) list[soIdx].items = [];
+  list[soIdx].items.push(newItem);
+  saveStockOuts(list);
 
-  // Update info total
-  const infoTotal = document.getElementById("infoTotal");
-  if (infoTotal) infoTotal.textContent = so[invoiceId].total;
+  // Render ulang semua
+  renderTableItems();
+  renderInfo();
+  updateSummaryBar();
 
-  tambahBarisTabel(item);
-  updateSummary();
-  jumlahOverlay.classList.remove("active");
+  document.getElementById("jumlahOverlay").classList.remove("active");
   selectedBarang = null;
 });
 
-function kurangiStok(invoiceAsal, namaBarang, kategori, jumlah) {
-  const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
-  if (!invoices[invoiceAsal]) return;
-  const found = invoices[invoiceAsal].items.find(
-    (i) => i.nama === namaBarang && i.kategori === kategori,
-  );
-  if (found) found.stok = Math.max(0, parseInt(found.stok) - jumlah);
-  localStorage.setItem("invoices", JSON.stringify(invoices));
-}
-
-// ===== TAMBAH BARIS =====
-function tambahBarisTabel(item) {
-  const emptyRow = tableBody.querySelector(".empty-row");
-  if (emptyRow) emptyRow.remove();
-  rowCount++;
-  const sisaClass = item.sisaStok <= 5 ? "stok-sisa-low" : "stok-sisa-ok";
-  const tr = document.createElement("tr");
-  tr.dataset.idx = rowCount - 1;
-  tr.innerHTML = `
-    <td>${rowCount}</td>
-    <td>${item.nama}</td>
-    <td><span class="badge badge-blue">${item.kategori}</span></td>
-    <td>${item.merk}</td>
-    <td>${item.lokasi}</td>
-    <td><span class="badge badge-orange">${item.invoiceAsal}</span></td>
-    <td><strong>${item.jumlahKeluar}</strong></td>
-    <td class="${sisaClass}">${item.sisaStok}</td>
-    <td><button class="btn-hapus"><i class="bx bx-undo"></i> Kembalikan</button></td>
-  `;
-  tr.querySelector(".btn-hapus").addEventListener("click", () => {
-    rowToDelete = tr;
-    confirmOverlay.classList.add("active");
-  });
-  tableBody.appendChild(tr);
-}
-
-// ===== KONFIRMASI KEMBALIKAN =====
-document.getElementById("confirmYes").addEventListener("click", () => {
-  if (!rowToDelete) return;
-  const idx = parseInt(rowToDelete.dataset.idx);
-  const so = JSON.parse(localStorage.getItem("stockOuts") || "{}");
-  const items = so[invoiceId].items || [];
-  const item = items[idx];
-
-  if (item) {
+function kurangiStokInvoice(invoiceAsal, namaBarang, kategori, jumlah) {
+  try {
     const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
-    if (invoices[item.invoiceAsal]) {
-      const found = invoices[item.invoiceAsal].items.find(
-        (i) => i.nama === item.nama && i.kategori === item.kategori,
-      );
-      if (found)
-        found.stok = parseInt(found.stok) + parseInt(item.jumlahKeluar);
-      localStorage.setItem("invoices", JSON.stringify(invoices));
-    }
-    items.splice(idx, 1);
-    so[invoiceId].items = items;
-    so[invoiceId].total = items.length;
-    localStorage.setItem("stockOuts", JSON.stringify(so));
+    if (!invoices[invoiceAsal]) return;
+    const found = invoices[invoiceAsal].items.find(
+      (i) => i.nama === namaBarang && i.kategori === kategori,
+    );
+    if (found) found.stok = Math.max(0, parseInt(found.stok) - jumlah);
+    localStorage.setItem("invoices", JSON.stringify(invoices));
+  } catch (e) {
+    /* ignore */
+  }
+}
 
-    const infoTotal = document.getElementById("infoTotal");
-    if (infoTotal) infoTotal.textContent = so[invoiceId].total;
+// ============================================================
+// ===== KEMBALIKAN (Hapus Item) ==============================
+// ============================================================
+document.getElementById("confirmYes").addEventListener("click", () => {
+  if (rowToDelete === null) return;
+
+  const list = loadStockOuts();
+  const soIdx = list.findIndex((s) => s.id === invoiceId);
+  if (soIdx === -1) {
+    window.location.href = "stockOut.html";
+    return;
   }
 
-  rowToDelete.remove();
-  reindexRows();
-  updateSummary();
+  const items = list[soIdx].items || [];
+  const item = items[rowToDelete];
+
+  if (item) {
+    // Kembalikan stok
+    try {
+      const invoices = JSON.parse(localStorage.getItem("invoices") || "{}");
+      if (invoices[item.invoiceAsal]) {
+        const found = invoices[item.invoiceAsal].items.find(
+          (i) => i.nama === item.nama && i.kategori === item.kategori,
+        );
+        if (found)
+          found.stok =
+            (parseInt(found.stok) || 0) + (parseInt(item.jumlahKeluar) || 0);
+        localStorage.setItem("invoices", JSON.stringify(invoices));
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
+    items.splice(rowToDelete, 1);
+    list[soIdx].items = items;
+    saveStockOuts(list);
+  }
+
   rowToDelete = null;
-  confirmOverlay.classList.remove("active");
+  document.getElementById("confirmOverlay").classList.remove("active");
+
+  renderTableItems();
+  renderInfo();
+  updateSummaryBar();
 });
 
 document.getElementById("confirmNo").addEventListener("click", () => {
   rowToDelete = null;
-  confirmOverlay.classList.remove("active");
+  document.getElementById("confirmOverlay").classList.remove("active");
 });
-confirmOverlay.addEventListener("click", (e) => {
-  if (e.target === confirmOverlay) {
+document.getElementById("confirmOverlay").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("confirmOverlay")) {
     rowToDelete = null;
-    confirmOverlay.classList.remove("active");
+    document.getElementById("confirmOverlay").classList.remove("active");
   }
 });
 
-function reindexRows() {
-  const rows = tableBody.querySelectorAll("tr:not(.empty-row)");
-  if (rows.length === 0) {
-    const emptyTr = document.createElement("tr");
-    emptyTr.className = "empty-row";
-    emptyTr.innerHTML =
-      '<td colspan="9">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>';
-    tableBody.appendChild(emptyTr);
-    rowCount = 0;
-  } else {
-    rows.forEach((r, i) => {
-      r.cells[0].textContent = i + 1;
-      r.dataset.idx = i;
-    });
-    rowCount = rows.length;
-  }
-}
-
-function updateSummary() {
-  const so = JSON.parse(localStorage.getItem("stockOuts") || "{}");
-  summaryTotal.textContent = so[invoiceId]?.total || 0;
-}
-
-// ===== INIT =====
-function init() {
-  const data = JSON.parse(localStorage.getItem("stockOuts") || "{}")[invoiceId];
-  if (!data || !data.items || data.items.length === 0) return;
-  const emptyRow = tableBody.querySelector(".empty-row");
-  if (emptyRow) emptyRow.remove();
-  data.items.forEach((item, i) => {
-    rowCount++;
-    const sisaClass = item.sisaStok <= 5 ? "stok-sisa-low" : "stok-sisa-ok";
-    const tr = document.createElement("tr");
-    tr.dataset.idx = i;
-    tr.innerHTML = `
-      <td>${rowCount}</td>
-      <td>${item.nama}</td>
-      <td><span class="badge badge-blue">${item.kategori}</span></td>
-      <td>${item.merk}</td>
-      <td>${item.lokasi}</td>
-      <td><span class="badge badge-orange">${item.invoiceAsal}</span></td>
-      <td><strong>${item.jumlahKeluar}</strong></td>
-      <td class="${sisaClass}">${item.sisaStok}</td>
-      <td><button class="btn-hapus"><i class="bx bx-undo"></i> Kembalikan</button></td>
-    `;
-    tr.querySelector(".btn-hapus").addEventListener("click", () => {
-      rowToDelete = tr;
-      confirmOverlay.classList.add("active");
-    });
-    tableBody.appendChild(tr);
-  });
-  updateSummary();
-}
-
-init();
-
-/**
- * =====================================================================
- *  INVENZ — patch invoiceKeluar.js
- *  Tambahkan / ganti fungsi renderInvoiceInfo() dengan versi ini
- *  agar metode pembayaran tampil di info bar halaman detail invoice keluar.
- * =====================================================================
- */
-
-/**
- * Ambil data invoice keluar dari localStorage berdasarkan ?id= di URL.
- * Fungsi ini sudah ada di invoiceKeluar.js — pastikan ia membaca
- * field paymentId & paymentNama yang kini ikut tersimpan.
- */
-function getInvoiceFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const id     = params.get('id');
-    const list   = JSON.parse(localStorage.getItem('invenz_stockouts') || '[]');
-    return list.find(s => s.id === id) || null;
-}
-
-/**
- * Render info bar di bagian atas halaman invoiceKeluar.
- * GANTI / TAMBAHKAN fungsi ini ke invoiceKeluar.js.
- */
-function renderInvoiceInfo(invoice) {
-    const el = document.getElementById('invoiceInfo');
-    if (!el || !invoice) return;
-
-    // Nama bulan Indonesia
-    function formatTanggal(dateStr) {
-        if (!dateStr) return '—';
-        const [y, m, d] = dateStr.split('-');
-        const bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        return `${parseInt(d)} ${bln[parseInt(m)-1]} ${y}`;
-    }
-
-    // Icon & warna badge metode bayar
-    function paymentBadge(id, nama) {
-        const map = {
-            pay_default_cash : { icon: '💵', cls: 'pay-cash' },
-            pay_default_qris : { icon: '📱', cls: 'pay-qris' },
-        };
-        const cfg = map[id] || { icon: '💰', cls: 'pay-other' };
-        return `<span class="info-payment-badge ${cfg.cls}">${cfg.icon} ${nama || '—'}</span>`;
-    }
-
-    el.innerHTML = `
-        <div class="info-item">
-            <span class="info-label">Invoice</span>
-            <span class="info-val"><strong>${invoice.invoice || '—'}</strong></span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Tanggal</span>
-            <span class="info-val">${formatTanggal(invoice.tanggal)}</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Penerima</span>
-            <span class="info-val">${invoice.penerima || '—'}</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label"><i class="bx bx-credit-card" style="vertical-align:-2px"></i> Metode Bayar</span>
-            <span class="info-val">${paymentBadge(invoice.paymentId, invoice.paymentNama)}</span>
-        </div>
-    `;
-}
-
-/* ─────────────────────────────────────────────
-   CSS TAMBAHAN — tambahkan ke css/invoiceKeluar.css
-   ─────────────────────────────────────────────
-
-.invoice-info {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-    background: #f8faff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0;
-}
-.info-item {
-    display: flex;
-    flex-direction: column;
-    padding: 12px 20px;
-    border-right: 1px solid #e5e7eb;
-    min-width: 140px;
-}
-.info-item:last-child { border-right: none; }
-.info-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #9ca3af;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 3px;
-}
-.info-val { font-size: 14px; color: #111827; }
-
-/* Payment badge */
-.info-payment-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-}
-.pay-cash  { background: #dcfce7; color: #166534; }
-.pay-qris  { background: #ede9fe; color: #5b21b6; }
-.pay-other { background: #fef3c7; color: #92400e; }
-
-───────────────────────────────────────────────── */
+// ============================================================
+// ===== INIT =================================================
+// ============================================================
+renderInfo();
+renderTableItems();
+updateSummaryBar();

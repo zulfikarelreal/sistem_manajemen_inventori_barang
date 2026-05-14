@@ -51,9 +51,9 @@
 
     <div class="nav-controll">
         <p>* klik invoice untuk melihat &amp; mengelola barang keluar</p>
-        <div class="stockout-btn" id="openModalBtn">
+        <button class="stockout-btn" id="openModalBtn">
             <i class="bx bx-plus"></i> Stock Out
-        </div>
+        </button>
     </div>
 
     <div class="container">
@@ -63,15 +63,17 @@
                     <th>#</th>
                     <th>Invoice Keluar</th>
                     <th>Tanggal Keluar</th>
-                    <th>Nama Penerima</th>
+                    <th>Customer</th>
+                    <th>No. Telepon</th>
                     <th>Metode Bayar</th>
                     <th>Total Barang</th>
+                    <th>Total Harga</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr class="empty-row">
-                    <td colspan="7">Belum ada data — klik "Stock Out" untuk membuat invoice keluar</td>
+                    <td colspan="9">Belum ada data — klik "Stock Out" untuk membuat invoice keluar</td>
                 </tr>
             </tbody>
         </table>
@@ -86,11 +88,14 @@
             </div>
             <div class="modal-form">
 
-                <!-- No. Invoice -->
+                <!-- Auto Invoice Number (read-only preview) -->
                 <div class="form-row">
                     <label>No. Invoice Keluar <span class="req">*</span></label>
-                    <input type="text" id="inputInvoice"
-                           placeholder="Contoh: INV-OUT-001" autocomplete="off">
+                    <div class="invoice-preview-box" id="invoicePreviewBox">
+                        <i class="bx bx-barcode"></i>
+                        <span id="invoiceAutoPreview">INV-OUT-...</span>
+                        <span class="auto-badge">Auto</span>
+                    </div>
                 </div>
 
                 <!-- Tanggal -->
@@ -99,36 +104,49 @@
                     <input type="date" id="inputTanggal">
                 </div>
 
-                <!-- Penerima: custom dropdown -->
+                <!-- Customer / Penerima: custom dropdown -->
                 <div class="form-row">
-                    <label>Penerima / Tujuan <span class="req">*</span></label>
+                    <label>Nama Customer <span class="req">*</span></label>
                     <div class="cd-wrapper" id="cdPenerima">
                         <div class="cd-input-row">
                             <input class="cd-input" id="inputPenerima" type="text"
-                                   placeholder="Pilih atau ketik penerima" autocomplete="off">
+                                   placeholder="Pilih atau ketik nama customer" autocomplete="off">
                             <i class="bx bx-chevron-down cd-arrow"></i>
                         </div>
                         <div class="cd-dropdown">
                             <div class="cd-search-box">
                                 <i class="bx bx-search"></i>
-                                <input class="cd-search" type="text" placeholder="Cari penerima...">
+                                <input class="cd-search" type="text" placeholder="Cari customer...">
                             </div>
                             <ul class="cd-list"></ul>
-                            <div class="cd-empty">Belum ada data penerima di Linked Data</div>
+                            <div class="cd-empty">Belum ada data customer di Linked Data</div>
                         </div>
                     </div>
+                </div>
+
+                <!-- No. Telepon (opsional) -->
+                <div class="form-row">
+                    <label>No. Telepon <span class="opt">(opsional)</span></label>
+                    <div class="phone-input-wrap">
+                        <span class="phone-prefix"><i class="bx bx-phone"></i></span>
+                        <input type="tel" id="inputTelepon"
+                               placeholder="Contoh: 08123456789" autocomplete="off">
+                    </div>
+                    <span class="field-hint" id="phonAutofillHint" style="display:none">
+                        <i class="bx bx-info-circle"></i> No. telepon terisi otomatis dari data customer.
+                    </span>
                 </div>
 
                 <!-- Metode Pembayaran -->
                 <div class="form-row">
                     <label>Metode Pembayaran <span class="req">*</span></label>
                     <div class="payment-options" id="paymentOptions">
-                        <!-- Diisi JS dari linkedData payment -->
+                        <!-- Diisi JS -->
                     </div>
                     <p class="payment-empty-hint" id="paymentEmptyHint" style="display:none">
                         <i class="bx bx-info-circle"></i>
                         Belum ada metode pembayaran.
-                        <a href="linkedData.html#payment">Tambahkan di Linked Data → Payment</a>
+                        <a href="linkedData.html">Tambahkan di Linked Data → Payment</a>
                     </p>
                 </div>
 
@@ -137,7 +155,7 @@
             <div class="modal-actions">
                 <button class="btn-batal" id="batalBtn">Batal</button>
                 <button class="btn-simpan" id="simpanBtn">
-                    <i class="bx bx-save"></i> Simpan
+                    <i class="bx bx-save"></i> Simpan & Lanjut
                 </button>
             </div>
         </div>
