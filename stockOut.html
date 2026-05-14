@@ -50,7 +50,7 @@
     </div>
 
     <div class="nav-controll">
-        <p>* klik invoice untuk melihat & mengelola barang keluar</p>
+        <p>* klik invoice untuk melihat &amp; mengelola barang keluar</p>
         <div class="stockout-btn" id="openModalBtn">
             <i class="bx bx-plus"></i> Stock Out
         </div>
@@ -64,48 +64,81 @@
                     <th>Invoice Keluar</th>
                     <th>Tanggal Keluar</th>
                     <th>Nama Penerima</th>
+                    <th>Metode Bayar</th>
                     <th>Total Barang</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr class="empty-row">
-                    <td colspan="6">Belum ada data — klik "Stock Out" untuk membuat invoice keluar</td>
+                    <td colspan="7">Belum ada data — klik "Stock Out" untuk membuat invoice keluar</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- Modal Buat Invoice Keluar -->
+    <!-- ===== MODAL BUAT INVOICE KELUAR ===== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <h3>Stock Out Barang</h3>
+            <div class="modal-top-bar">
+                <h3><i class="bx bx-truck"></i> Stock Out Barang</h3>
+                <button class="modal-close-x" id="modalCloseX"><i class="bx bx-x"></i></button>
+            </div>
             <div class="modal-form">
-                <input type="text" id="inputInvoice" placeholder="No. Invoice Keluar (contoh: INV-OUT-001)" autocomplete="off">
-                <input type="date" id="inputTanggal">
 
-                <!-- Penerima: custom dropdown dari linkedData.penerima -->
-                <div class="cd-wrapper" id="cdPenerima">
-                    <div class="cd-input-row">
-                        <input class="cd-input" id="inputPenerima" type="text"
-                               placeholder="Nama Penerima / Tujuan" autocomplete="off">
-                        <i class="bx bx-chevron-down cd-arrow"></i>
-                    </div>
-                    <div class="cd-dropdown">
-                        <div class="cd-search-box">
-                            <i class="bx bx-search"></i>
-                            <input class="cd-search" type="text" placeholder="Cari penerima...">
+                <!-- No. Invoice -->
+                <div class="form-row">
+                    <label>No. Invoice Keluar <span class="req">*</span></label>
+                    <input type="text" id="inputInvoice"
+                           placeholder="Contoh: INV-OUT-001" autocomplete="off">
+                </div>
+
+                <!-- Tanggal -->
+                <div class="form-row">
+                    <label>Tanggal Keluar <span class="req">*</span></label>
+                    <input type="date" id="inputTanggal">
+                </div>
+
+                <!-- Penerima: custom dropdown -->
+                <div class="form-row">
+                    <label>Penerima / Tujuan <span class="req">*</span></label>
+                    <div class="cd-wrapper" id="cdPenerima">
+                        <div class="cd-input-row">
+                            <input class="cd-input" id="inputPenerima" type="text"
+                                   placeholder="Pilih atau ketik penerima" autocomplete="off">
+                            <i class="bx bx-chevron-down cd-arrow"></i>
                         </div>
-                        <ul class="cd-list"></ul>
-                        <div class="cd-empty">Belum ada data penerima di Linked Data</div>
+                        <div class="cd-dropdown">
+                            <div class="cd-search-box">
+                                <i class="bx bx-search"></i>
+                                <input class="cd-search" type="text" placeholder="Cari penerima...">
+                            </div>
+                            <ul class="cd-list"></ul>
+                            <div class="cd-empty">Belum ada data penerima di Linked Data</div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Metode Pembayaran -->
+                <div class="form-row">
+                    <label>Metode Pembayaran <span class="req">*</span></label>
+                    <div class="payment-options" id="paymentOptions">
+                        <!-- Diisi JS dari linkedData payment -->
+                    </div>
+                    <p class="payment-empty-hint" id="paymentEmptyHint" style="display:none">
+                        <i class="bx bx-info-circle"></i>
+                        Belum ada metode pembayaran.
+                        <a href="linkedData.html#payment">Tambahkan di Linked Data → Payment</a>
+                    </p>
                 </div>
 
             </div>
             <p class="error-msg" id="errorMsg"></p>
             <div class="modal-actions">
                 <button class="btn-batal" id="batalBtn">Batal</button>
-                <button class="btn-simpan" id="simpanBtn">Simpan</button>
+                <button class="btn-simpan" id="simpanBtn">
+                    <i class="bx bx-save"></i> Simpan
+                </button>
             </div>
         </div>
     </div>

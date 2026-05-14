@@ -296,6 +296,12 @@ function closeModalBarang() {
   editBarangIdx = null;
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    // ... kode existing lainnya ...
+ 
+    initPayments();   // <── tambahkan ini
+});
+
 document
   .getElementById("btnCloseBarang")
   .addEventListener("click", closeModalBarang);
@@ -825,3 +831,291 @@ document
 ["kategori", "merk", "supplier", "barang", "lokasi", "penerima"].forEach(
   renderTable,
 );
+
+/* ─────────────────────────────────────────────
+   KONSTANTA STORAGE KEY
+   ───────────────────────────────────────────── */
+const PAYMENT_KEY = 'invenz_payment_methods';
+ 
+/* ─────────────────────────────────────────────
+   DEFAULT METODE (Cash & QRIS tidak bisa hapus)
+   ───────────────────────────────────────────── */
+const DEFAULT_PAYMENTS = [
+    {
+        id: 'pay_default_cash',
+        nama: 'Cash',
+        keterangan: 'Pembayaran tunai',
+        aktif: true,
+        isDefault: true
+    },
+    {
+        id: 'pay_default_qris',
+        nama: 'QRIS',
+        keterangan: 'Scan QR Code (GoPay, OVO, Dana, ShopeePay, dll.)',
+        aktif: true,
+        isDefault: true
+    }
+];
+ 
+/* ─────────────────────────────────────────────
+   HELPER — baca / tulis localStorage
+   ───────────────────────────────────────────── */
+function loadPayments() {
+    try {
+        const raw = localStorage.getItem(PAYMENT_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+ 
+function savePayments(list) {
+    localStorage.setItem(PAYMENT_KEY, JSON.stringify(list));
+}
+ 
+/**
+ * Inisialisasi: jika belum ada data, seed dengan default.
+ * Dipanggil sekali saat DOMContentLoaded.
+ */
+function initPayments() {
+    if (!loadPayments()) {
+        savePayments(DEFAULT_PAYMENTS);
+    }
+    renderPaymentTable();
+    bindPaymentEvents();
+}
+ 
+/* ─────────────────────────────────────────────
+   PUBLIC — dipakai modul lain (stockOut, dll.)
+   ───────────────────────────────────────────── */
+/**
+ * Kembalikan array metode payment yang AKTIF.
+ * @returns {{ id, nama, keterangan, aktif, isDefault }[]}
+ */
+function getPaymentMethods() {
+    const list = loadPayments() || DEFAULT_PAYMENTS;
+    return list.filter(p => p.aktif);
+}
+ 
+/* ─────────────────────────────────────────────
+   RENDER TABEL
+   ───────────────────────────────────────────── */
+function renderPaymentTable() {
+    const tbody = document.getElementById('tablePayment');
+    if (!tbody) return;
+ 
+    const list = loadPayments() || DEFAULT_PAYMENTS;
+ 
+    if (!list.length) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Belum ada metode pembayaran</td></tr>';
+        return;
+    }
+ 
+    tbody.innerHTML = list.map((p, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td>
+                ${p.nama}
+                ${p.isDefault ? '<span class="badge-default">Default</span>' : ''}
+            </td>
+            <td>${p.keterangan || '<span class="text-muted">—</span>'}</td>
+            <td>
+                <span class="badge-status ${p.aktif ? 'aktif' : 'nonaktif'}">
+                    ${p.aktif ? 'Aktif' : 'Non-aktif'}
+                </span>
+            </td>
+            <td class="actions-cell">
+                <button class="btn-action btn-edit" onclick="openEditPayment('${p.id}')" title="Edit">
+                    <i class="bx bx-edit"></i>
+                </button>
+                ${p.isDefault
+                    ? `<button class="btn-action btn-delete" disabled title="Metode default tidak bisa dihapus" style="opacity:.35;cursor:not-allowed">
+                           <i class="bx bx-trash"></i>
+                       </button>`
+                    : `<button class="btn-action btn-delete" onclick="confirmDeletePayment('${p.id}')" title="Hapus">
+                           <i class="bx bx-trash"></i>
+                       </button>`
+                }
+            </td>
+        </tr>
+    `).join('');
+}
+ 
+/* ─────────────────────────────────────────────
+   BUKA MODAL — TAMBAH
+   ───────────────────────────────────────────── */
+function openAddPayment() {
+    document.getElementById('modalPaymentTitle').innerHTML =
+        '<i class="bx bx-credit-card"></i> Tambah Metode Pembayaran';
+    document.getElementById('fPaymentNama').value = '';
+    document.getElementById('fPaymentKeterangan').value = '';
+    document.getElementById('fPaymentAktif').checked = true;
+    document.getElementById('toggleLabel').textContent = 'Aktif';
+    document.getElementById('errorMsgPayment').textContent = '';
+    document.getElementById('btnSimpanPayment').dataset.editId = '';
+    document.getElementById('modalPaymentOverlay').classList.add('active');
+    document.getElementById('fPaymentNama').focus();
+}
+ 
+/* ─────────────────────────────────────────────
+   BUKA MODAL — EDIT
+   ───────────────────────────────────────────── */
+function openEditPayment(id) {
+    const list = loadPayments() || [];
+    const item = list.find(p => p.id === id);
+    if (!item) return;
+ 
+    document.getElementById('modalPaymentTitle').innerHTML =
+        '<i class="bx bx-edit"></i> Edit Metode Pembayaran';
+    document.getElementById('fPaymentNama').value = item.nama;
+    document.getElementById('fPaymentKeterangan').value = item.keterangan || '';
+    document.getElementById('fPaymentAktif').checked = item.aktif;
+    document.getElementById('toggleLabel').textContent = item.aktif ? 'Aktif' : 'Non-aktif';
+    document.getElementById('errorMsgPayment').textContent = '';
+    document.getElementById('btnSimpanPayment').dataset.editId = id;
+    document.getElementById('modalPaymentOverlay').classList.add('active');
+    document.getElementById('fPaymentNama').focus();
+}
+ 
+/* ─────────────────────────────────────────────
+   TUTUP MODAL PAYMENT
+   ───────────────────────────────────────────── */
+function closePaymentModal() {
+    document.getElementById('modalPaymentOverlay').classList.remove('active');
+}
+ 
+/* ─────────────────────────────────────────────
+   SIMPAN (Tambah / Edit)
+   ───────────────────────────────────────────── */
+function savePayment() {
+    const nama = document.getElementById('fPaymentNama').value.trim();
+    const keterangan = document.getElementById('fPaymentKeterangan').value.trim();
+    const aktif = document.getElementById('fPaymentAktif').checked;
+    const editId = document.getElementById('btnSimpanPayment').dataset.editId;
+    const errEl = document.getElementById('errorMsgPayment');
+ 
+    if (!nama) {
+        errEl.textContent = 'Nama metode tidak boleh kosong.';
+        return;
+    }
+ 
+    let list = loadPayments() || [];
+ 
+    // Cek duplikat nama (case-insensitive), kecuali diri sendiri saat edit
+    const duplicate = list.find(p =>
+        p.nama.toLowerCase() === nama.toLowerCase() && p.id !== editId
+    );
+    if (duplicate) {
+        errEl.textContent = 'Metode pembayaran dengan nama ini sudah ada.';
+        return;
+    }
+ 
+    if (editId) {
+        // Mode edit
+        list = list.map(p => p.id === editId ? { ...p, nama, keterangan, aktif } : p);
+    } else {
+        // Mode tambah
+        const newItem = {
+            id: 'pay_' + Date.now(),
+            nama,
+            keterangan,
+            aktif,
+            isDefault: false
+        };
+        list.push(newItem);
+    }
+ 
+    savePayments(list);
+    closePaymentModal();
+    renderPaymentTable();
+}
+ 
+/* ─────────────────────────────────────────────
+   HAPUS dengan konfirmasi modal global
+   ───────────────────────────────────────────── */
+let _pendingDeletePaymentId = null;
+ 
+function confirmDeletePayment(id) {
+    _pendingDeletePaymentId = id;
+    // Gunakan modal konfirmasi yang sudah ada di HTML
+    document.getElementById('confirmOverlay').classList.add('active');
+}
+ 
+function executeDeletePayment() {
+    if (!_pendingDeletePaymentId) return;
+ 
+    // Cek apakah payment dipakai di transaksi stockOut
+    const stockOuts = JSON.parse(localStorage.getItem('invenz_stockouts') || '[]');
+    const dipakai = stockOuts.some(so => so.paymentId === _pendingDeletePaymentId);
+    if (dipakai) {
+        alert('Metode ini sudah digunakan dalam transaksi Stock Out dan tidak dapat dihapus. Nonaktifkan saja jika tidak ingin ditampilkan.');
+        _pendingDeletePaymentId = null;
+        document.getElementById('confirmOverlay').classList.remove('active');
+        return;
+    }
+ 
+    let list = loadPayments() || [];
+    list = list.filter(p => p.id !== _pendingDeletePaymentId);
+    savePayments(list);
+    renderPaymentTable();
+ 
+    _pendingDeletePaymentId = null;
+    document.getElementById('confirmOverlay').classList.remove('active');
+}
+ 
+/* ─────────────────────────────────────────────
+   BIND EVENTS
+   ───────────────────────────────────────────── */
+function bindPaymentEvents() {
+    // Tombol "Tambah Metode" di tab
+    const btnAdd = document.getElementById('btnAddPayment');
+    if (btnAdd) btnAdd.addEventListener('click', openAddPayment);
+ 
+    // Simpan
+    const btnSimpan = document.getElementById('btnSimpanPayment');
+    if (btnSimpan) btnSimpan.addEventListener('click', savePayment);
+ 
+    // Tutup modal (X & Batal)
+    const btnClose = document.getElementById('btnClosePayment');
+    if (btnClose) btnClose.addEventListener('click', closePaymentModal);
+ 
+    const btnBatal = document.getElementById('btnBatalPayment');
+    if (btnBatal) btnBatal.addEventListener('click', closePaymentModal);
+ 
+    // Overlay klik tutup
+    const overlay = document.getElementById('modalPaymentOverlay');
+    if (overlay) overlay.addEventListener('click', function(e) {
+        if (e.target === this) closePaymentModal();
+    });
+ 
+    // Toggle label aktif/nonaktif
+    const toggleInput = document.getElementById('fPaymentAktif');
+    if (toggleInput) {
+        toggleInput.addEventListener('change', function() {
+            document.getElementById('toggleLabel').textContent = this.checked ? 'Aktif' : 'Non-aktif';
+        });
+    }
+ 
+    // Enter submit
+    ['fPaymentNama', 'fPaymentKeterangan'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') savePayment(); });
+    });
+ 
+    // Hook konfirmasi hapus — perlu share confirmYes dengan confirm global
+    // Jika linkedData.js sudah punya handler confirmYes, tambahkan logika berikut
+    // di dalam handler yang ada, atau ganti seluruhnya seperti ini:
+    const confirmYes = document.getElementById('confirmYes');
+    if (confirmYes) {
+        // Wrapper: cek apakah pending delete adalah payment atau data lain
+        const _originalConfirm = confirmYes.onclick;
+        confirmYes.onclick = function() {
+            if (_pendingDeletePaymentId) {
+                executeDeletePayment();
+            } else if (typeof _originalConfirm === 'function') {
+                _originalConfirm.call(this);
+            }
+        };
+    }
+}

@@ -413,3 +413,115 @@ function init() {
 }
 
 init();
+
+/**
+ * =====================================================================
+ *  INVENZ — patch invoiceKeluar.js
+ *  Tambahkan / ganti fungsi renderInvoiceInfo() dengan versi ini
+ *  agar metode pembayaran tampil di info bar halaman detail invoice keluar.
+ * =====================================================================
+ */
+
+/**
+ * Ambil data invoice keluar dari localStorage berdasarkan ?id= di URL.
+ * Fungsi ini sudah ada di invoiceKeluar.js — pastikan ia membaca
+ * field paymentId & paymentNama yang kini ikut tersimpan.
+ */
+function getInvoiceFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const id     = params.get('id');
+    const list   = JSON.parse(localStorage.getItem('invenz_stockouts') || '[]');
+    return list.find(s => s.id === id) || null;
+}
+
+/**
+ * Render info bar di bagian atas halaman invoiceKeluar.
+ * GANTI / TAMBAHKAN fungsi ini ke invoiceKeluar.js.
+ */
+function renderInvoiceInfo(invoice) {
+    const el = document.getElementById('invoiceInfo');
+    if (!el || !invoice) return;
+
+    // Nama bulan Indonesia
+    function formatTanggal(dateStr) {
+        if (!dateStr) return '—';
+        const [y, m, d] = dateStr.split('-');
+        const bln = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return `${parseInt(d)} ${bln[parseInt(m)-1]} ${y}`;
+    }
+
+    // Icon & warna badge metode bayar
+    function paymentBadge(id, nama) {
+        const map = {
+            pay_default_cash : { icon: '💵', cls: 'pay-cash' },
+            pay_default_qris : { icon: '📱', cls: 'pay-qris' },
+        };
+        const cfg = map[id] || { icon: '💰', cls: 'pay-other' };
+        return `<span class="info-payment-badge ${cfg.cls}">${cfg.icon} ${nama || '—'}</span>`;
+    }
+
+    el.innerHTML = `
+        <div class="info-item">
+            <span class="info-label">Invoice</span>
+            <span class="info-val"><strong>${invoice.invoice || '—'}</strong></span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Tanggal</span>
+            <span class="info-val">${formatTanggal(invoice.tanggal)}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Penerima</span>
+            <span class="info-val">${invoice.penerima || '—'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label"><i class="bx bx-credit-card" style="vertical-align:-2px"></i> Metode Bayar</span>
+            <span class="info-val">${paymentBadge(invoice.paymentId, invoice.paymentNama)}</span>
+        </div>
+    `;
+}
+
+/* ─────────────────────────────────────────────
+   CSS TAMBAHAN — tambahkan ke css/invoiceKeluar.css
+   ─────────────────────────────────────────────
+
+.invoice-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    background: #f8faff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0;
+}
+.info-item {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 20px;
+    border-right: 1px solid #e5e7eb;
+    min-width: 140px;
+}
+.info-item:last-child { border-right: none; }
+.info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 3px;
+}
+.info-val { font-size: 14px; color: #111827; }
+
+/* Payment badge */
+.info-payment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.pay-cash  { background: #dcfce7; color: #166534; }
+.pay-qris  { background: #ede9fe; color: #5b21b6; }
+.pay-other { background: #fef3c7; color: #92400e; }
+
+───────────────────────────────────────────────── */

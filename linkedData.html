@@ -7,7 +7,6 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/basic/boxicons.min.css" rel="stylesheet">
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- JsBarcode untuk generate barcode SKU -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <title>Linked Data | Invenz</title>
 </head>
@@ -58,6 +57,7 @@
             <button class="tab-btn" data-tab="barang"><i class="bx bx-package"></i> Barang</button>
             <button class="tab-btn" data-tab="lokasi"><i class="bx bx-map"></i> Lokasi Inventori</button>
             <button class="tab-btn" data-tab="penerima"><i class="bx bx-user"></i> Penerima/Tujuan</button>
+            <button class="tab-btn" data-tab="payment"><i class="bx bx-credit-card"></i> Payment</button>
         </div>
 
         <div class="tab-content-container">
@@ -98,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- ===== BARANG (REVISI) ===== -->
+            <!-- BARANG -->
             <div class="tab-content" data-content="barang">
                 <div class="section-header">
                     <h3>Data Barang</h3>
@@ -147,10 +147,38 @@
                 </div>
             </div>
 
+            <!-- ===== PAYMENT (BARU) ===== -->
+            <div class="tab-content" data-content="payment">
+                <div class="section-header">
+                    <h3>Metode Pembayaran</h3>
+                    <button class="btn-add" id="btnAddPayment"><i class="bx bx-plus"></i> Tambah Metode</button>
+                </div>
+                <div class="payment-info-bar">
+                    <i class="bx bx-info-circle"></i>
+                    <span>Metode pembayaran ini akan tersedia saat proses Stock Out. Metode <strong>Cash</strong> dan <strong>QRIS</strong> adalah default dan tidak dapat dihapus.</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nama Metode</th>
+                                <th>Keterangan</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablePayment">
+                            <tr class="empty-row"><td colspan="5">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- ===== MODAL UNIVERSAL (non-barang) ===== -->
+    <!-- ===== MODAL UNIVERSAL (non-barang, non-payment) ===== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h3 id="modalTitle">Tambah Data</h3>
@@ -163,17 +191,14 @@
         </div>
     </div>
 
-    <!-- ===== MODAL BARANG (khusus, dengan SKU + scanner) ===== -->
+    <!-- ===== MODAL BARANG ===== -->
     <div class="modal-overlay" id="modalBarangOverlay">
         <div class="modal modal-barang">
             <div class="modal-top-bar">
                 <h3 id="modalBarangTitle"><i class="bx bx-package"></i> Tambah Barang</h3>
                 <button class="modal-close-x" id="btnCloseBarang"><i class="bx bx-x"></i></button>
             </div>
-
             <div class="modal-form">
-
-                <!-- SKU -->
                 <div class="form-row">
                     <label>Kode SKU <span class="req">*</span></label>
                     <div class="sku-row">
@@ -183,8 +208,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Scanner panel -->
                 <div class="scanner-panel hidden" id="scannerBarangPanel">
                     <div class="scan-box">
                         <video id="cameraStreamBarang" autoplay playsinline></video>
@@ -210,14 +233,10 @@
                         <button class="btn-use-scan" id="btnUseScanBarang">Gunakan</button>
                     </div>
                 </div>
-
-                <!-- Nama Barang -->
                 <div class="form-row">
                     <label>Nama Barang <span class="req">*</span></label>
                     <input type="text" id="fBarangNama" placeholder="Contoh: RAM Kingston 16GB DDR4" autocomplete="off">
                 </div>
-
-                <!-- Merk & Kategori -->
                 <div class="form-grid-2">
                     <div class="form-row">
                         <label>Merk <span class="req">*</span></label>
@@ -232,19 +251,50 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Hint: merk/kategori belum ada -->
                 <p class="field-hint" id="hintMerkKategori" style="display:none">
                     <i class="bx bx-info-circle"></i>
                     Merk/Kategori belum ada? Tambahkan dulu di tab Merk/Kategori.
                 </p>
-
             </div>
-
             <p class="error-msg" id="errorMsgBarang"></p>
             <div class="modal-actions">
                 <button class="btn-batal" id="btnBatalBarang">Batal</button>
                 <button class="btn-simpan" id="btnSimpanBarang">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PAYMENT (BARU) ===== -->
+    <div class="modal-overlay" id="modalPaymentOverlay">
+        <div class="modal modal-payment">
+            <div class="modal-top-bar">
+                <h3 id="modalPaymentTitle"><i class="bx bx-credit-card"></i> Tambah Metode Pembayaran</h3>
+                <button class="modal-close-x" id="btnClosePayment"><i class="bx bx-x"></i></button>
+            </div>
+            <div class="modal-form">
+                <div class="form-row">
+                    <label>Nama Metode <span class="req">*</span></label>
+                    <input type="text" id="fPaymentNama" placeholder="Contoh: Transfer Bank, Debit, dll." autocomplete="off">
+                </div>
+                <div class="form-row">
+                    <label>Keterangan <span class="opt">(opsional)</span></label>
+                    <input type="text" id="fPaymentKeterangan" placeholder="Contoh: BCA, Mandiri, GoPay, dll." autocomplete="off">
+                </div>
+                <div class="form-row">
+                    <label>Status</label>
+                    <div class="toggle-wrap">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="fPaymentAktif" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label" id="toggleLabel">Aktif</span>
+                    </div>
+                </div>
+            </div>
+            <p class="error-msg" id="errorMsgPayment"></p>
+            <div class="modal-actions">
+                <button class="btn-batal" id="btnBatalPayment">Batal</button>
+                <button class="btn-simpan" id="btnSimpanPayment"><i class="bx bx-save"></i> Simpan</button>
             </div>
         </div>
     </div>

@@ -39,7 +39,6 @@
         </div>
     </div>
 
-    <!-- Navbar sama seperti invoice masuk -->
     <div class="navbar">
         <i class="bxf bx-chevron-left-circle" id="backBtn" title="Kembali"></i>
         <div class="title">
@@ -49,9 +48,30 @@
         <i class="bxf bx-user-circle"></i>
     </div>
 
-    <!-- Info bar sama seperti invoice masuk -->
+    <!--
+        Info bar invoice — diisi JS.
+        JS wajib merender kolom "Metode Bayar" di sini.
+        Contoh output yang diharapkan dari invoiceKeluar.js:
+
+        <div class="info-item">
+            <span class="info-label">Invoice</span>
+            <span class="info-val">INV-OUT-001</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Tanggal</span>
+            <span class="info-val">12 Mei 2025</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Penerima</span>
+            <span class="info-val">Gudang B</span>
+        </div>
+        <div class="info-item info-payment">
+            <span class="info-label"><i class="bx bx-credit-card"></i> Metode Bayar</span>
+            <span class="info-val payment-badge">Cash</span>
+        </div>
+    -->
     <div class="invoice-info" id="invoiceInfo">
-        <!-- Diisi JS -->
+        <!-- Diisi JS — termasuk payment info -->
     </div>
 
     <div class="nav-controll">
