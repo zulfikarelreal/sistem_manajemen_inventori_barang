@@ -1,54 +1,73 @@
+/**
+ * =====================================================================
+ *  INVENZ — js/stockOut.js
+ *  Versi: dengan integrasi Metode Pembayaran (Payment)
+ * =====================================================================
+ *
+ *  Dependensi localStorage:
+ *    invenz_stockouts        — daftar invoice keluar
+ *    invenz_payment_methods  — master payment dari linkedData
+ *    invenz_linked_penerima  — master penerima dari linkedData
+ *    invenz_global_stok      — stok barang (dibaca invoiceKeluar.js)
+ * =====================================================================
+ */
 
+'use strict';
 
-const SO_KEY = 'invenz_stockout';   // daftar invoice keluar
-// Data stok barang dibaca dari: invenz_invoices (dikelola inputBarang.js)
+/* ─────────────────────────────────────────────
+   STORAGE KEYS
+   ───────────────────────────────────────────── */
+const STOCKOUT_KEY  = 'invenz_stockouts';
+const PAYMENT_KEY   = 'invenz_payment_methods';
+const PENERIMA_KEY  = 'invenz_linked_penerima'; // sesuaikan dengan key di linkedData.js
 
-// ════════════════════════════════════════════════════════════
-//  HELPERS STORAGE
-// ════════════════════════════════════════════════════════════
-function getInvoiceKeluar() {
-    try { return JSON.parse(localStorage.getItem(SO_KEY)) || []; }
-    catch { return []; }
+/* ─────────────────────────────────────────────
+   DEFAULT PAYMENT (fallback jika belum ada data)
+   ───────────────────────────────────────────── */
+const DEFAULT_PAYMENTS = [
+    { id: 'pay_default_cash', nama: 'Cash',  aktif: true, isDefault: true },
+    { id: 'pay_default_qris', nama: 'QRIS',  aktif: true, isDefault: true }
+];
+
+/* ─────────────────────────────────────────────
+   HELPERS
+   ───────────────────────────────────────────── */
+function loadStockOuts() {
+    try { return JSON.parse(localStorage.getItem(STOCKOUT_KEY) || '[]'); } catch { return []; }
 }
-function simpanInvoiceKeluar(list) {
-    localStorage.setItem(SO_KEY, JSON.stringify(list));
+function saveStockOuts(list) {
+    localStorage.setItem(STOCKOUT_KEY, JSON.stringify(list));
 }
-
-// Ambil payment aktif — pakai API dari linkedData_payment.js kalau tersedia
-function getPaymentAktif() {
-    if (window.InvenzPayment) return window.InvenzPayment.getAktif();
-    // Fallback: baca langsung dari localStorage
-    const PAYMENT_KEY = 'invenz_payment';
-    const defaults = [
-        { id: 'default_cash', nama: 'Cash',  keterangan: 'Pembayaran tunai', aktif: true },
-        { id: 'default_qris', nama: 'QRIS',  keterangan: 'QR Code Indonesian Standard', aktif: true },
-    ];
+function loadPayments() {
     try {
-        const custom = JSON.parse(localStorage.getItem(PAYMENT_KEY)) || [];
-        return [...defaults, ...custom.filter(p => !p.isDefault)].filter(p => p.aktif);
-    } catch { return defaults; }
+        const raw = localStorage.getItem(PAYMENT_KEY);
+        return raw ? JSON.parse(raw) : DEFAULT_PAYMENTS;
+    } catch { return DEFAULT_PAYMENTS; }
+}
+function getActivePayments() {
+    return loadPayments().filter(p => p.aktif);
+}
+function loadPenerima() {
+    try { return JSON.parse(localStorage.getItem(PENERIMA_KEY) || '[]'); } catch { return []; }
+}
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const [y, m, d] = dateStr.split('-');
+    const bulan = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    return `${parseInt(d)} ${bulan[parseInt(m) - 1]} ${y}`;
 }
 
-// Format Rupiah
-function fmtRp(n) {
-    return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
-}
+/* ─────────────────────────────────────────────
+   STATE
+   ───────────────────────────────────────────── */
+let pendingDeleteId = null;
 
-// Format tanggal → "12 Mei 2025"
-function fmtTgl(str) {
-    if (!str) return '—';
-    const d = new Date(str);
-    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-// ════════════════════════════════════════════════════════════
-//  RENDER TABEL UTAMA STOCK OUT
-// ════════════════════════════════════════════════════════════
-function renderTabelStockOut() {
-    const tbody = document.getElementById('tableBody');
-    if (!tbody) return;
-
-    const list = getInvoiceKeluar();
+/* ─────────────────────────────────────────────
+   RENDER TABEL STOCK OUT
+   ───────────────────────────────────────────── */
+function renderTable() {
+    const tbody   = document.getElementById('tableBody');
+    const list    = loadStockOuts();
 
     if (!list.length) {
         tbody.innerHTML = `<tr class="empty-row">
@@ -57,370 +76,345 @@ function renderTabelStockOut() {
         return;
     }
 
-    // Urutkan terbaru di atas
-    const sorted = [...list].sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+    tbody.innerHTML = list.map((so, i) => {
+        const totalItem = (so.items || []).reduce((s, it) => s + (it.jumlah || 0), 0);
+        const paymentNama = so.paymentNama || '—';
 
-    tbody.innerHTML = sorted.map((inv, i) => {
-        const totalItem = (inv.items || []).reduce((s, it) => s + (it.jumlah || 0), 0);
-        return `<tr class="inv-row" data-id="${inv.id}" style="cursor:pointer">
+        // Badge warna per metode
+        const badgeClass = getBadgeClass(so.paymentId);
+
+        return `<tr class="invoice-row" data-id="${so.id}" style="cursor:pointer">
             <td>${i + 1}</td>
-            <td><strong>${inv.id}</strong></td>
-            <td>${fmtTgl(inv.tanggal)}</td>
-            <td>${inv.penerima || '—'}</td>
-            <td>
-                <span class="badge-payment">${inv.paymentNama || '—'}</span>
-            </td>
+            <td><strong>${so.invoice}</strong></td>
+            <td>${formatDate(so.tanggal)}</td>
+            <td>${so.penerima || '—'}</td>
+            <td><span class="payment-chip ${badgeClass}">${paymentNama}</span></td>
             <td>${totalItem} item</td>
-            <td onclick="event.stopPropagation()">
-                <div class="action-btns">
-                    <button class="btn-action btn-view" data-id="${inv.id}" title="Lihat Detail">
-                        <i class="bx bx-show"></i>
-                    </button>
-                    <button class="btn-action btn-del" data-id="${inv.id}" title="Hapus">
-                        <i class="bx bx-trash"></i>
-                    </button>
-                </div>
+            <td class="actions-cell" onclick="event.stopPropagation()">
+                <button class="btn-action btn-delete" onclick="confirmDelete('${so.id}')" title="Hapus">
+                    <i class="bx bx-trash"></i>
+                </button>
             </td>
         </tr>`;
     }).join('');
 
-    // Klik baris → ke halaman detail
-    tbody.querySelectorAll('.inv-row').forEach(row => {
-        row.addEventListener('click', () => {
-            window.location.href = `invoiceKeluar.html?id=${row.dataset.id}`;
-        });
-    });
-
-    // Tombol lihat
-    tbody.querySelectorAll('.btn-view[data-id]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            window.location.href = `invoiceKeluar.html?id=${btn.dataset.id}`;
-        });
-    });
-
-    // Tombol hapus
-    tbody.querySelectorAll('.btn-del[data-id]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            confirmHapus(btn.dataset.id);
+    // Klik baris → buka invoiceKeluar
+    tbody.querySelectorAll('.invoice-row').forEach(row => {
+        row.addEventListener('click', function() {
+            const id = this.dataset.id;
+            window.location.href = `invoiceKeluar.html?id=${id}`;
         });
     });
 }
 
-// ════════════════════════════════════════════════════════════
-//  MODAL BUAT INVOICE KELUAR — OPEN / CLOSE
-// ════════════════════════════════════════════════════════════
-function bukaModal() {
-    const overlay = document.getElementById('modalOverlay');
-    if (!overlay) return;
-
-    // Reset field
-    const inputInv  = document.getElementById('inputInvoice');
-    const inputTgl  = document.getElementById('inputTanggal');
-    const inputPen  = document.getElementById('inputPenerima');
-    const errMsg    = document.getElementById('errorMsg');
-
-    if (inputInv)  inputInv.value  = '';
-    if (inputTgl)  inputTgl.value  = new Date().toISOString().split('T')[0];
-    if (inputPen)  inputPen.value  = '';
-    if (errMsg)    errMsg.textContent = '';
-
-    // Reset pilihan payment
-    resetPilihanPayment();
-
-    // Populate payment options
-    renderPaymentOptions();
-
-    // Populate penerima dropdown (dari linkedData)
-    isiDropdownPenerima();
-
-    overlay.classList.add('active');
-    setTimeout(() => inputInv?.focus(), 80);
+function getBadgeClass(paymentId) {
+    if (!paymentId) return 'chip-default';
+    if (paymentId === 'pay_default_cash') return 'chip-cash';
+    if (paymentId === 'pay_default_qris') return 'chip-qris';
+    return 'chip-other';
 }
 
-function tutupModal() {
-    document.getElementById('modalOverlay')?.classList.remove('active');
-}
-
-// ════════════════════════════════════════════════════════════
-//  PAYMENT OPTIONS — render pill/chip di dalam modal
-// ════════════════════════════════════════════════════════════
-let _selectedPayment = null; // { id, nama }
-
+/* ─────────────────────────────────────────────
+   RENDER PAYMENT OPTIONS (radio pill di modal)
+   ───────────────────────────────────────────── */
 function renderPaymentOptions() {
-    const container = document.getElementById('paymentOptions');
-    const emptyHint = document.getElementById('paymentEmptyHint');
-    if (!container) return;
+    const container  = document.getElementById('paymentOptions');
+    const emptyHint  = document.getElementById('paymentEmptyHint');
+    const payments   = getActivePayments();
 
-    const methods = getPaymentAktif();
-
-    if (!methods.length) {
-        container.innerHTML = '';
+    if (!payments.length) {
+        container.innerHTML  = '';
         if (emptyHint) emptyHint.style.display = 'flex';
         return;
     }
+
     if (emptyHint) emptyHint.style.display = 'none';
 
-    container.innerHTML = methods.map(m => `
-        <button type="button" class="payment-chip" data-id="${m.id}" data-nama="${m.nama}">
-            ${m.nama === 'Cash'  ? '<i class="bx bx-money"></i>' : ''}
-            ${m.nama === 'QRIS'  ? '<i class="bx bx-qr"></i>' : ''}
-            ${m.nama !== 'Cash' && m.nama !== 'QRIS' ? '<i class="bx bx-credit-card"></i>' : ''}
-            ${m.nama}
-        </button>
+    container.innerHTML = payments.map((p, i) => `
+        <label class="payment-pill ${i === 0 ? 'selected' : ''}" for="pay_${p.id}">
+            <input
+                type="radio"
+                name="paymentMethod"
+                id="pay_${p.id}"
+                value="${p.id}"
+                data-nama="${p.nama}"
+                ${i === 0 ? 'checked' : ''}
+            >
+            <span class="pill-icon">${getPaymentIcon(p.id, p.nama)}</span>
+            <span class="pill-label">${p.nama}</span>
+        </label>
     `).join('');
 
-    // Pilih Cash secara default jika ada
-    const cashChip = container.querySelector('[data-nama="Cash"]');
-    if (cashChip) pilihPaymentChip(cashChip);
-
-    // Bind klik
-    container.querySelectorAll('.payment-chip').forEach(chip => {
-        chip.addEventListener('click', () => pilihPaymentChip(chip));
+    // Update selected style on change
+    container.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            container.querySelectorAll('.payment-pill').forEach(lbl => lbl.classList.remove('selected'));
+            radio.closest('.payment-pill').classList.add('selected');
+        });
     });
 }
 
-function pilihPaymentChip(chip) {
-    document.querySelectorAll('#paymentOptions .payment-chip')
-        .forEach(c => c.classList.remove('selected'));
-    chip.classList.add('selected');
-    _selectedPayment = { id: chip.dataset.id, nama: chip.dataset.nama };
+function getPaymentIcon(id, nama) {
+    const n = nama.toLowerCase();
+    if (id === 'pay_default_cash'  || n === 'cash')   return '💵';
+    if (id === 'pay_default_qris'  || n === 'qris')   return '📱';
+    if (n.includes('transfer') || n.includes('bank')) return '🏦';
+    if (n.includes('debit') || n.includes('kartu'))   return '💳';
+    if (n.includes('gopay') || n.includes('ovo') || n.includes('dana')) return '📲';
+    return '💰';
 }
 
-function resetPilihanPayment() {
-    _selectedPayment = null;
-    document.querySelectorAll('#paymentOptions .payment-chip')
-        .forEach(c => c.classList.remove('selected'));
+/* ─────────────────────────────────────────────
+   BUKA / TUTUP MODAL
+   ───────────────────────────────────────────── */
+function openModal() {
+    // Reset form
+    document.getElementById('inputInvoice').value = '';
+    document.getElementById('inputTanggal').value  = '';
+    document.getElementById('inputPenerima').value = '';
+    document.getElementById('errorMsg').textContent = '';
+
+    // Set tanggal hari ini sebagai default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('inputTanggal').value = today;
+
+    // Populate payment pills
+    renderPaymentOptions();
+
+    // Populate penerima dropdown (custom dropdown)
+    if (typeof populatePenerimaDropdown === 'function') {
+        populatePenerimaDropdown();
+    } else {
+        // Fallback: isi manual jika customDropdown.js belum handle
+        _populatePenerimaFallback();
+    }
+
+    document.getElementById('modalOverlay').classList.add('active');
+    setTimeout(() => document.getElementById('inputInvoice').focus(), 100);
 }
 
-// ════════════════════════════════════════════════════════════
-//  ISI DROPDOWN PENERIMA (dari linkedData)
-// ════════════════════════════════════════════════════════════
-function isiDropdownPenerima() {
-    try {
-        const linkedData = JSON.parse(localStorage.getItem('linkedData')) || {};
-        const penerima   = linkedData.penerima || [];
-        const cdList     = document.querySelector('#cdPenerima .cd-list');
-        const cdEmpty    = document.querySelector('#cdPenerima .cd-empty');
-        if (!cdList) return;
-
-        if (!penerima.length) {
-            cdList.innerHTML = '';
-            if (cdEmpty) cdEmpty.style.display = 'block';
-            return;
-        }
-        if (cdEmpty) cdEmpty.style.display = 'none';
-
-        cdList.innerHTML = penerima.map(p =>
-            `<li data-value="${p.nama || p}">${p.nama || p}</li>`
-        ).join('');
-
-        const inputPen = document.getElementById('inputPenerima');
-        cdList.querySelectorAll('li').forEach(li => {
-            li.addEventListener('click', () => {
-                if (inputPen) inputPen.value = li.dataset.value;
-                document.querySelector('#cdPenerima .cd-dropdown')?.classList.remove('open');
-            });
-        });
-    } catch (e) {
-        console.warn('Gagal load penerima:', e);
-    }
+function _populatePenerimaFallback() {
+    // Isi cd-list untuk custom dropdown penerima
+    const list   = loadPenerima();
+    const cdList = document.querySelector('#cdPenerima .cd-list');
+    if (!cdList) return;
+    cdList.innerHTML = list.map(p =>
+        `<li data-value="${p.nama || p}">${p.nama || p}</li>`
+    ).join('');
 }
 
-// ════════════════════════════════════════════════════════════
-//  SIMPAN INVOICE KELUAR
-// ════════════════════════════════════════════════════════════
-function simpanStockOut() {
-    const inputInv = document.getElementById('inputInvoice');
-    const inputTgl = document.getElementById('inputTanggal');
-    const inputPen = document.getElementById('inputPenerima');
-    const errMsg   = document.getElementById('errorMsg');
+function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
 
-    const idInvoice = inputInv?.value.trim();
-    const tanggal   = inputTgl?.value;
-    const penerima  = inputPen?.value.trim();
+/* ─────────────────────────────────────────────
+   SIMPAN INVOICE KELUAR BARU
+   ───────────────────────────────────────────── */
+function simpanInvoice() {
+    const invoice   = document.getElementById('inputInvoice').value.trim();
+    const tanggal   = document.getElementById('inputTanggal').value;
+    const penerima  = document.getElementById('inputPenerima').value.trim();
+    const errEl     = document.getElementById('errorMsg');
 
-    // Validasi
-    if (!idInvoice) {
-        errMsg.textContent = 'No. invoice tidak boleh kosong.';
-        inputInv?.focus();
-        return;
-    }
-    if (!tanggal) {
-        errMsg.textContent = 'Tanggal keluar wajib diisi.';
-        inputTgl?.focus();
-        return;
-    }
-    if (!penerima) {
-        errMsg.textContent = 'Penerima wajib diisi.';
-        inputPen?.focus();
-        return;
-    }
-    if (!_selectedPayment) {
-        errMsg.textContent = 'Pilih metode pembayaran terlebih dahulu.';
+    // Ambil payment yang dipilih
+    const paymentRadio = document.querySelector('input[name="paymentMethod"]:checked');
+
+    errEl.textContent = '';
+
+    if (!invoice)  { errEl.textContent = 'No. Invoice tidak boleh kosong.'; return; }
+    if (!tanggal)  { errEl.textContent = 'Tanggal keluar harus diisi.'; return; }
+    if (!penerima) { errEl.textContent = 'Penerima / tujuan harus diisi.'; return; }
+    if (!paymentRadio) { errEl.textContent = 'Pilih metode pembayaran.'; return; }
+
+    // Cek duplikat invoice
+    const existing = loadStockOuts();
+    if (existing.find(s => s.invoice.toLowerCase() === invoice.toLowerCase())) {
+        errEl.textContent = 'No. Invoice ini sudah ada.';
         return;
     }
 
-    const list = getInvoiceKeluar();
-
-    // Cek duplikat ID invoice
-    if (list.some(inv => inv.id === idInvoice)) {
-        errMsg.textContent = `Invoice "${idInvoice}" sudah ada.`;
-        inputInv?.focus();
-        return;
-    }
-
-    const newInvoice = {
-        id:          idInvoice,
-        tanggal:     tanggal,
-        penerima:    penerima,
-        paymentId:   _selectedPayment.id,
-        paymentNama: _selectedPayment.nama,
-        items:       [],
-        createdAt:   new Date().toISOString(),
+    const newSO = {
+        id         : 'so_' + Date.now(),
+        invoice,
+        tanggal,
+        penerima,
+        paymentId  : paymentRadio.value,
+        paymentNama: paymentRadio.dataset.nama,
+        items      : [],
+        createdAt  : new Date().toISOString()
     };
 
-    list.push(newInvoice);
-    simpanInvoiceKeluar(list);
-    renderTabelStockOut();
-    tutupModal();
+    existing.push(newSO);
+    saveStockOuts(existing);
+    closeModal();
+    renderTable();
 
-    // Langsung buka halaman detail invoice keluar
-    window.location.href = `invoiceKeluar.html?id=${idInvoice}`;
+    // Langsung navigasi ke halaman detail invoice keluar
+    window.location.href = `invoiceKeluar.html?id=${newSO.id}`;
 }
 
-// ════════════════════════════════════════════════════════════
-//  HAPUS INVOICE KELUAR
-// ════════════════════════════════════════════════════════════
-let _hapusId = null;
-
-function confirmHapus(id) {
-    _hapusId = id;
-    const overlay = document.getElementById('confirmOverlay');
-    overlay?.classList.add('active');
+/* ─────────────────────────────────────────────
+   HAPUS INVOICE
+   ───────────────────────────────────────────── */
+function confirmDelete(id) {
+    pendingDeleteId = id;
+    document.getElementById('confirmOverlay').classList.add('active');
 }
 
-function eksekusiHapus() {
-    if (!_hapusId) return;
+function executeDelete() {
+    if (!pendingDeleteId) return;
 
-    const list  = getInvoiceKeluar();
-    const inv   = list.find(i => i.id === _hapusId);
+    let list = loadStockOuts();
+    const so = list.find(s => s.id === pendingDeleteId);
 
-    if (inv && inv.items?.length) {
-        // Kembalikan stok
-        kembalikanStok(inv.items);
+    // Kembalikan stok jika ada items
+    if (so && so.items && so.items.length) {
+        _kembalikanStok(so.items);
     }
 
-    const baru = list.filter(i => i.id !== _hapusId);
-    simpanInvoiceKeluar(baru);
-    renderTabelStockOut();
-    tutupConfirmSO();
-    _hapusId = null;
+    list = list.filter(s => s.id !== pendingDeleteId);
+    saveStockOuts(list);
+    pendingDeleteId = null;
+    document.getElementById('confirmOverlay').classList.remove('active');
+    renderTable();
 }
 
-function tutupConfirmSO() {
-    document.getElementById('confirmOverlay')?.classList.remove('active');
-}
-
-// Kembalikan stok ke invenz_invoices saat invoice keluar dihapus
-function kembalikanStok(items) {
+function _kembalikanStok(items) {
+    // Baca stok global dan kembalikan qty
+    const STOK_KEY = 'invenz_global_stok'; // sesuaikan dengan key di globalStok.js
     try {
-        const invoices = JSON.parse(localStorage.getItem('invenz_invoices')) || [];
+        let stok = JSON.parse(localStorage.getItem(STOK_KEY) || '[]');
         items.forEach(item => {
-            // Cari barang berdasarkan SKU di semua invoice masuk
-            for (const inv of invoices) {
-                const barang = (inv.items || []).find(b => b.sku === item.sku);
-                if (barang) {
-                    barang.stok = (barang.stok || 0) + (item.jumlah || 0);
-                    break;
-                }
+            const idx = stok.findIndex(s => s.sku === item.sku && s.invoiceAsal === item.invoiceAsal);
+            if (idx !== -1) {
+                stok[idx].qty = (stok[idx].qty || 0) + (item.jumlah || 0);
             }
         });
-        localStorage.setItem('invenz_invoices', JSON.stringify(invoices));
+        localStorage.setItem(STOK_KEY, JSON.stringify(stok));
     } catch (e) {
         console.warn('Gagal kembalikan stok:', e);
     }
 }
 
-// ════════════════════════════════════════════════════════════
-//  AUTH CHECK
-// ════════════════════════════════════════════════════════════
-function cekAuth() {
-    if (!localStorage.getItem('isLoggedIn')) {
-        window.location.href = 'login.html';
-    }
-    // Isi nama user di sidebar
-    const user = localStorage.getItem('loggedUser') || 'Admin';
-    const avatar = user.charAt(0).toUpperCase();
-    document.querySelectorAll('#sidebarUsername').forEach(el => el.textContent = user);
-    document.querySelectorAll('#sidebarAvatar').forEach(el => el.textContent = avatar);
-}
-
-// ════════════════════════════════════════════════════════════
-//  SIDEBAR & HAMBURGER
-// ════════════════════════════════════════════════════════════
-function initSidebar() {
-    const sidebar        = document.getElementById('sidebar');
-    const overlay        = document.getElementById('sidebarOverlay');
-    const hamburger      = document.getElementById('hamburger');
-    const closeBtn       = document.getElementById('sidebarClose');
-    const logoutBtn      = document.getElementById('logoutBtn');
-
-    hamburger?.addEventListener('click', () => {
-        sidebar?.classList.add('open');
-        overlay?.classList.add('active');
-    });
-    closeBtn?.addEventListener('click', () => {
-        sidebar?.classList.remove('open');
-        overlay?.classList.remove('active');
-    });
-    overlay?.addEventListener('click', () => {
-        sidebar?.classList.remove('open');
-        overlay?.classList.remove('active');
-    });
-    logoutBtn?.addEventListener('click', () => {
-        localStorage.removeItem('isLoggedIn');
-        window.location.href = 'login.html';
-    });
-}
-
-// ════════════════════════════════════════════════════════════
-//  INIT UTAMA
-// ════════════════════════════════════════════════════════════
+/* ─────────────────────────────────────────────
+   BIND EVENTS & INIT
+   ───────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    cekAuth();
-    initSidebar();
-    renderTabelStockOut();
 
     // Tombol buka modal
     document.getElementById('openModalBtn')
-        ?.addEventListener('click', bukaModal);
+        .addEventListener('click', openModal);
 
-    // Tombol tutup modal
-    document.getElementById('modalCloseX')
-        ?.addEventListener('click', tutupModal);
+    // Tutup modal (X)
+    const closeX = document.getElementById('modalCloseX');
+    if (closeX) closeX.addEventListener('click', closeModal);
+
+    // Batal
     document.getElementById('batalBtn')
-        ?.addEventListener('click', tutupModal);
+        .addEventListener('click', closeModal);
 
-    // Klik luar modal
+    // Klik overlay tutup
     document.getElementById('modalOverlay')
-        ?.addEventListener('click', function (e) {
-            if (e.target === this) tutupModal();
+        .addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
         });
 
     // Simpan
     document.getElementById('simpanBtn')
-        ?.addEventListener('click', simpanStockOut);
+        .addEventListener('click', simpanInvoice);
 
-    // Enter di input invoice
+    // Enter di field invoice
     document.getElementById('inputInvoice')
-        ?.addEventListener('keydown', e => { if (e.key === 'Enter') simpanStockOut(); });
+        .addEventListener('keydown', e => { if (e.key === 'Enter') simpanInvoice(); });
 
     // Konfirmasi hapus
     document.getElementById('confirmYes')
-        ?.addEventListener('click', eksekusiHapus);
+        .addEventListener('click', executeDelete);
     document.getElementById('confirmNo')
-        ?.addEventListener('click', tutupConfirmSO);
+        .addEventListener('click', () => {
+            pendingDeleteId = null;
+            document.getElementById('confirmOverlay').classList.remove('active');
+        });
+
+    // Sidebar / auth (sudah di auth.js)
+    renderTable();
 });
 
+/* ─────────────────────────────────────────────
+   CSS TAMBAHAN — tambahkan ke css/stockOut.css
+   ─────────────────────────────────────────────
+
+.modal-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+.modal-top-bar h3 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.modal-close-x {
+    background: none; border: none; cursor: pointer;
+    font-size: 22px; color: #6b7280; padding: 2px;
+}
+.modal-close-x:hover { color: #111; }
+
+.form-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.form-row label { font-size: 13px; font-weight: 500; color: #374151; }
+.form-row input[type="text"],
+.form-row input[type="date"] {
+    padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+    font-family: inherit; font-size: 14px; outline: none; transition: border .2s;
+}
+.form-row input:focus { border-color: rgb(16,44,168); box-shadow: 0 0 0 3px rgba(16,44,168,.08); }
+
+.req { color: #dc2626; }
+
+/* ── Payment Pills ── */
+.payment-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+.payment-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    background: #f9fafb;
+    transition: all .18s;
+    user-select: none;
+}
+.payment-pill input[type="radio"] { display: none; }
+.payment-pill:hover { border-color: rgb(16,44,168); background: #eff4ff; }
+.payment-pill.selected {
+    border-color: rgb(16,44,168);
+    background: rgb(16,44,168);
+    color: #fff;
+}
+.pill-icon { font-size: 16px; line-height: 1; }
+.payment-empty-hint {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #6b7280; margin-top: 6px;
+}
+.payment-empty-hint a { color: rgb(16,44,168); }
+
+/* ── Payment chip di tabel ── */
+.payment-chip {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.chip-cash    { background: #dcfce7; color: #166534; }
+.chip-qris    { background: #ede9fe; color: #5b21b6; }
+.chip-other   { background: #fef3c7; color: #92400e; }
+.chip-default { background: #f3f4f6; color: #6b7280; }
+
+───────────────────────────────────────────────── */
