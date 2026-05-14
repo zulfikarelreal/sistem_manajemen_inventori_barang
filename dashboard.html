@@ -51,6 +51,7 @@
 
     <div class="main">
 
+        <!-- Welcome Banner -->
         <div class="welcome-banner">
             <div class="welcome-text">
                 <h2>Selamat Datang, <span id="welcomeUser">Admin</span></h2>
@@ -62,6 +63,7 @@
             </div>
         </div>
 
+        <!-- ── Ringkasan Stok ── -->
         <div class="section-title">Ringkasan Stok</div>
         <div class="stats-grid">
             <div class="stat-card">
@@ -90,20 +92,62 @@
             </div>
         </div>
 
+        <!-- ── Ringkasan Stock Out ── -->
+        <div class="section-title">Ringkasan Stock Out</div>
+        <div class="stats-grid stats-grid-3">
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="bx bx-truck" style="color:#6d28d9"></i></div>
+                <div class="stat-label">Total Invoice Keluar</div>
+                <div class="stat-value" id="statTotalOut">0</div>
+                <div class="stat-sub">transaksi keluar</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange"><i class="bx bx-export" style="color:#c2410c"></i></div>
+                <div class="stat-label">Total Item Keluar</div>
+                <div class="stat-value" id="statItemOut">0</div>
+                <div class="stat-sub">unit dikeluarkan</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon teal"><i class="bx bx-credit-card" style="color:#0f766e"></i></div>
+                <div class="stat-label">Metode Terbanyak</div>
+                <div class="stat-value stat-value-sm" id="statTopPayment">—</div>
+                <div class="stat-sub">metode pembayaran</div>
+            </div>
+        </div>
+
+        <!-- ── Distribusi Barang ── -->
         <div class="section-title">Distribusi Barang</div>
         <div class="charts-row">
             <div class="chart-card">
-                <h4><i class="bxf bx-pie-chart-alt"></i> Piechart Barang per Kategori </h4>
+                <h4><i class="bxf bx-pie-chart-alt"></i> Barang per Kategori</h4>
                 <canvas id="pieChart" height="200"></canvas>
                 <div class="empty-state" id="pieEmpty" style="display:none">Belum ada data barang</div>
             </div>
             <div class="chart-card">
-                <h4><i class="bxf bx-bar-chart-big"></i> Chart Barang per Merk</h4>
+                <h4><i class="bxf bx-bar-chart-big"></i> Barang per Merk</h4>
                 <canvas id="barChart" height="200"></canvas>
                 <div class="empty-state" id="barEmpty" style="display:none">Belum ada data barang</div>
             </div>
         </div>
 
+        <!-- ── Breakdown Metode Pembayaran ── -->
+        <div class="section-title">Metode Pembayaran Stock Out</div>
+        <div class="charts-row">
+            <div class="chart-card chart-card-payment">
+                <h4><i class="bxf bx-pie-chart-alt"></i> Distribusi Metode Bayar</h4>
+                <canvas id="paymentPieChart" height="200"></canvas>
+                <div class="empty-state" id="paymentPieEmpty" style="display:none">Belum ada transaksi keluar</div>
+            </div>
+            <div class="chart-card chart-card-payment">
+                <h4><i class="bxf bx-bar-chart-big"></i> Jumlah Transaksi per Metode</h4>
+                <div class="payment-legend" id="paymentLegend">
+                    <!-- Diisi JS -->
+                </div>
+                <div class="empty-state" id="paymentLegendEmpty" style="display:none">Belum ada transaksi keluar</div>
+            </div>
+        </div>
+
+        <!-- ── Invoice Masuk Terbaru ── -->
         <div class="section-title">Invoice Terbaru</div>
         <div class="recent-card">
             <h4><i class="bxf bx-receipt"></i> Daftar Invoice Masuk</h4>
@@ -120,6 +164,27 @@
                 </thead>
                 <tbody id="recentTableBody">
                     <tr><td colspan="6" class="empty-state">Belum ada invoice</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ── Invoice Keluar Terbaru ── -->
+        <div class="section-title">Stock Out Terbaru</div>
+        <div class="recent-card">
+            <h4><i class="bxf bx-truck"></i> Daftar Invoice Keluar</h4>
+            <table class="recent-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Invoice</th>
+                        <th>Penerima</th>
+                        <th>Tanggal</th>
+                        <th>Metode Bayar</th>
+                        <th>Total Item</th>
+                    </tr>
+                </thead>
+                <tbody id="recentOutTableBody">
+                    <tr><td colspan="6" class="empty-state">Belum ada stock out</td></tr>
                 </tbody>
             </table>
         </div>
@@ -143,11 +208,6 @@
                 <i class="bx bx-network-chart" style="color:rgb(16,44,168)"></i>
                 <span>Linked Data</span>
             </a>
-            
-            <!-- <a class="quick-btn" id="logoutQuick">
-                <i class="bx bx-log-out" style="color:#cc0000"></i>
-                <span>Logout</span>
-            </a> -->
         </div>
 
     </div>

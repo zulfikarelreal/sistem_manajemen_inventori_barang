@@ -470,11 +470,6 @@ tbody tr:not(.empty-row):hover {
     color: #555;
 }
 
-/* ============================================================
-   TAMBAHAN — append ke css/linkedData.css
-   Styles untuk: modal barang (SKU + scanner), barcode popup,
-   tombol SKU clickable di tabel
-   ============================================================ */
 
 /* ===== MODAL BARANG ===== */
 .modal-barang {
