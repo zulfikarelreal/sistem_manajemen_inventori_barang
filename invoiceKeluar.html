@@ -9,6 +9,140 @@
     <link href="https://cdn.boxicons.com/3.0.8/fonts/filled/boxicons-filled.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>Invoice Keluar | Invenz</title>
+
+    <style>
+        /* ===== PAYMENT BADGE di info bar ===== */
+        .info-payment-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: 600; border: 1px solid #111;
+        }
+        .pay-cash  { background: #d4f7e7; color: #0a6640; }
+        .pay-qris  { background: #ede9fe; color: #5b21b6; }
+        .pay-other { background: #fef3c7; color: #92400e; }
+
+        /* ===== TOTAL BAR bawah ===== */
+        .total-bar {
+            position: fixed; bottom: 0; width: 100%;
+            background: #111; color: white;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px; font-size: 13px; font-weight: 500; z-index: 90;
+        }
+        .total-bar strong { color: aqua; font-size: 15px; }
+
+        .col-harga-item { font-weight: 700; color: #1a6b2a; }
+
+        /* ===== SCAN SKU BUTTON di modal header ===== */
+        .modal-header-row {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-scan-sku-modal {
+            flex-shrink: 0; width: 36px; height: 36px;
+            background: rgb(16,44,168); color: white;
+            border: 1px solid #111; border-radius: 8px;
+            box-shadow: 2px 3px 0 0 #111; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.1s; font-family: "Poppins", sans-serif;
+        }
+        .btn-scan-sku-modal:hover { transform: scale(0.9); }
+        .btn-scan-sku-modal i { font-size: 18px !important; }
+
+        /* ===== SCANNER PANEL ===== */
+        .scanner-panel {
+            display: flex; flex-direction: column; gap: 8px;
+            background: #f8f8f8; border: 1px solid #ddd;
+            border-radius: 10px; padding: 10px;
+        }
+        .scanner-panel.hidden { display: none; }
+
+        .scan-box {
+            position: relative; width: 100%; height: 160px;
+            background: #0a0a0a; border-radius: 8px;
+            overflow: hidden; border: 2px solid #111;
+        }
+        .scan-box video { width: 100%; height: 100%; object-fit: cover; }
+
+        .scan-frame {
+            position: absolute; inset: 14px;
+            border: 2px solid aqua; border-radius: 6px; overflow: hidden;
+        }
+        .scan-line {
+            position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, aqua, transparent);
+            animation: scanMove 2s linear infinite;
+        }
+        @keyframes scanMove { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+
+        .scan-placeholder {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 6px; color: #aaa;
+        }
+        .scan-placeholder i { font-size: 36px !important; color: #444; }
+        .scan-placeholder p { font-size: 11px; }
+
+        .scan-actions { display: flex; align-items: center; gap: 8px; }
+
+        .btn-cam, .btn-gallery {
+            flex: 1; padding: 6px 8px; font-size: 11px; font-weight: 600;
+            border: 1px solid #111; border-radius: 7px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            box-shadow: 2px 2px 0 0 #111; font-family: "Poppins", sans-serif;
+            transition: transform 0.1s;
+        }
+        .btn-cam     { background: rgb(16,44,168); color: white; }
+        .btn-gallery { background: rgb(212,214,230); color: #111; }
+        .btn-cam:hover, .btn-gallery:hover { transform: scale(0.95); }
+        .btn-cam i, .btn-gallery i { font-size: 14px !important; }
+        .scan-or { font-size: 11px; color: #aaa; flex-shrink: 0; }
+
+        .btn-close-scanner {
+            flex-shrink: 0; width: 28px; height: 28px;
+            background: #eee; border: 1px solid #aaa;
+            border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s;
+        }
+        .btn-close-scanner:hover { background: #ffd0d0; }
+        .btn-close-scanner i { font-size: 16px !important; }
+
+        .scan-result {
+            display: flex; align-items: center; gap: 8px;
+            background: #e8fff2; border: 1px solid #28c840;
+            border-radius: 8px; padding: 7px 10px;
+        }
+        .scan-result.hidden { display: none; }
+        .scan-result i { font-size: 18px !important; color: #28c840; }
+        .scan-result-label { font-size: 10px; color: #666; font-weight: 600; display: block; }
+        .scan-result-val   { font-size: 13px; font-weight: 700; color: #111; }
+        .btn-use-scan {
+            margin-left: auto; padding: 4px 10px;
+            font-size: 11px; font-weight: 600;
+            background: #28c840; color: white;
+            border: 1px solid #111; border-radius: 6px;
+            cursor: pointer; font-family: "Poppins", sans-serif; white-space: nowrap;
+        }
+
+        /* Scan status */
+        .scan-status {
+            display: flex; align-items: center; gap: 8px;
+            border-radius: 8px; padding: 7px 12px;
+            font-size: 12px; font-weight: 500;
+        }
+        .scan-status[data-state="loading"]  { background: #fffbe6; border: 1px solid #ffc107; color: #7a5c00; }
+        .scan-status[data-state="scanning"] { background: #e8f4ff; border: 1px solid #5b9cff; color: #1a3c8c; }
+        .scan-status[data-state="error"]    { background: #fff0f0; border: 1px solid #ff7070; color: #cc2222; }
+        .scan-status i { font-size: 15px !important; flex-shrink: 0; }
+
+        .spin {
+            display: inline-block; width: 14px; height: 14px;
+            border: 2px solid #ffc10744; border-top-color: #ffc107;
+            border-radius: 50%; flex-shrink: 0;
+            animation: doSpin 0.7s linear infinite;
+        }
+        @keyframes doSpin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
 
@@ -45,102 +179,15 @@
             <i class="bxf bx-truck"></i>
             <h6 id="navTitle">INVOICE KELUAR</h6>
         </div>
-        <!-- Print Nota Button -->
-        <button id="btnPrintNota" title="Print Nota" style="
-            background:#ff6b35;color:white;border:1px solid #111;
-            border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;
-            cursor:pointer;display:flex;align-items:center;gap:6px;
-            font-family:'Poppins',sans-serif;box-shadow:2px 3px 0 0 #111;transition:transform .1s;
-        ">
-            <i class="bx bx-printer" style="font-size:16px"></i> Print Nota
-        </button>
+        <i class="bxf bx-user-circle"></i>
     </div>
 
-    <div class="invoice-info" id="invoiceInfo">
-        <div class="info-item">
-            <span class="info-label">Invoice</span>
-            <span class="info-val"><strong>INV-OUT-2</strong></span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Tanggal</span>
-            <span class="info-val">14 Mei 2026</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Customer</span>
-            <span class="info-val"><strong>IMAM</strong></span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">No. Telepon</span>
-            <span class="info-val">172637</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Metode Bayar</span>
-            <span class="info-val"><span class="info-payment-badge pay-cash">💵 Cash</span></span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Total Barang</span>
-            <span class="info-val" id="infoTotal"><strong>9</strong> item</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Total Nilai</span>
-            <span class="info-val" id="infoHarga" style="color:#1a6b2a;font-weight:700">Rp 26.000.000</span>
-        </div>
-    </div>
+    <!-- Info Bar -->
+    <div class="invoice-info" id="invoiceInfo"></div>
 
     <div class="nav-controll">
-        <p>* klik stock out barang atau scan barcode untuk mengeluarkan barang dari stok</p>
-        <div style="display:flex;gap:8px;align-items:center">
-            <button class="tambah-btn" id="btnScanBarcode" style="background:#e8f0ff;color:rgb(16,44,168);display:flex;align-items:center;gap:6px">
-                <i class="bx bx-barcode-reader" style="font-size:16px"></i> Scan SKU
-            </button>
-            <button class="tambah-btn" id="btnAddItem">+ Stock Out Barang</button>
-        </div>
-    </div>
-
-    
-
-    <!-- ===== PANEL SCAN BARCODE SKU (BARU) ===== -->
-    <div id="scanBarcodePanelWrap" style="display:none;width:90%;margin:0 auto 10px;">
-        <div style="
-            background:white;border:2px solid #111;border-radius:12px;
-            box-shadow:3px 5px 0 0 #111;padding:14px 16px;
-            display:flex;flex-direction:column;gap:10px;
-        ">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px">
-                    <i class="bx bx-barcode-reader" style="font-size:18px;color:#ff6b35"></i>
-                    Scan Barcode SKU Barang
-                </span>
-                <button id="btnCloseScanPanel" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">
-                    <i class="bx bx-x"></i>
-                </button>
-            </div>
-            <div style="position:relative;width:100%;height:160px;background:#0a0a0a;border-radius:8px;overflow:hidden;border:2px solid #111">
-                <video id="scanVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover"></video>
-                <div style="position:absolute;inset:14px;border:2px solid aqua;border-radius:6px;overflow:hidden">
-                    <div id="scanLine" style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,aqua,transparent);animation:scanMove 2s linear infinite"></div>
-                </div>
-                <div id="scanPlaceholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#aaa">
-                    <i class="bx bx-barcode-reader" style="font-size:36px;color:#444"></i>
-                    <p style="font-size:11px">Kamera belum aktif</p>
-                </div>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-                <button id="btnOpenCamScan" style="flex:1;padding:7px;background:rgb(16,44,168);color:white;border:1px solid #111;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:2px 3px 0 0 #111;font-family:'Poppins',sans-serif">
-                    <i class="bx bx-camera" style="font-size:14px"></i> Buka Kamera
-                </button>
-                <span style="font-size:11px;color:#aaa">atau</span>
-                <label style="flex:1;padding:7px;background:rgb(212,214,230);border:1px solid #111;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:2px 3px 0 0 #111">
-                    <i class="bx bx-image" style="font-size:14px"></i> Galeri
-                    <input type="file" id="galleryScan" accept="image/*" style="display:none">
-                </label>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center">
-                <input type="text" id="scanManualInput" placeholder="Atau ketik SKU secara manual..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid #aaa;font-size:13px;font-family:'Poppins',sans-serif;outline:none">
-                <button id="btnManualScan" style="padding:8px 14px;background:#ff6b35;color:white;border:1px solid #111;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:2px 3px 0 0 #111;white-space:nowrap;font-family:'Poppins',sans-serif">Cari</button>
-            </div>
-            <div id="scanStatus" style="display:none;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:500"></div>
-        </div>
+        <p>* klik "Stock Out Barang" untuk mengeluarkan barang dari stok</p>
+        <button class="tambah-btn" id="btnAddItem">+ Stock Out Barang</button>
     </div>
 
     <div class="container">
@@ -153,30 +200,76 @@
                     <th>Merk</th>
                     <th>Lokasi Inventori</th>
                     <th>Invoice Asal</th>
+                    <th>Harga Jual</th>
                     <th>Jumlah Keluar</th>
+                    <th>Subtotal</th>
                     <th>Sisa Stok</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody">
                 <tr class="empty-row">
-                    <td colspan="9">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
+                    <td colspan="11">Belum ada barang — klik "Stock Out Barang" untuk memilih barang dari stok</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div class="summary-bar" id="summaryBar">
+    <!-- Total bar bawah -->
+    <div class="total-bar" id="totalBar">
         <span>Total barang keluar: <strong id="summaryTotal">0</strong> item</span>
+        <span>Total nilai: <strong id="summaryHarga">Rp 0</strong></span>
     </div>
 
-    <!-- Modal Pilih Barang -->
+    <!-- ===== MODAL PILIH BARANG ===== -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal modal-wide">
             <div class="modal-header">
                 <h3><i class="bx bx-search"></i> Pilih Barang dari Stok</h3>
-                <input type="text" id="searchBarang" class="search-input"
-                       placeholder="🔍 Cari nama barang, kategori, merk...">
+
+                <!-- Baris search + tombol scan SKU -->
+                <div class="modal-header-row">
+                    <input type="text" id="searchBarang" class="search-input"
+                           placeholder="🔍 Cari nama, SKU, kategori, merk...">
+                    <button class="btn-scan-sku-modal" id="btnScanSKU" title="Scan Barcode SKU">
+                        <i class="bx bx-barcode-reader"></i>
+                    </button>
+                </div>
+
+                <!-- Scanner panel SKU -->
+                <div class="scanner-panel hidden" id="scannerSKUPanel">
+                    <div class="scan-box">
+                        <video id="cameraStreamSKU" autoplay playsinline></video>
+                        <div class="scan-frame"><div class="scan-line"></div></div>
+                        <div class="scan-placeholder" id="scanPlaceholderSKU">
+                            <i class="bx bx-barcode-reader"></i>
+                            <p>Kamera belum aktif</p>
+                        </div>
+                    </div>
+                    <div class="scan-actions">
+                        <button class="btn-cam" id="btnOpenCamSKU">
+                            <i class="bx bx-camera"></i> Kamera
+                        </button>
+                        <span class="scan-or">atau</span>
+                        <label class="btn-gallery" for="galleryInputSKU">
+                            <i class="bx bx-image"></i> Galeri
+                        </label>
+                        <input type="file" id="galleryInputSKU" accept="image/*" style="display:none">
+                        <button class="btn-close-scanner" id="btnCloseScannerSKU" title="Tutup">
+                            <i class="bx bx-x"></i>
+                        </button>
+                    </div>
+                    <div class="scan-result hidden" id="scanResultSKU">
+                        <i class="bx bx-check-circle"></i>
+                        <div>
+                            <span class="scan-result-label">Hasil Scan:</span>
+                            <span class="scan-result-val" id="scanResultValSKU">—</span>
+                        </div>
+                        <button class="btn-use-scan" id="btnUseScanSKU">Gunakan</button>
+                    </div>
+                </div>
+                <!-- end scanner panel -->
+
             </div>
             <div class="stok-list" id="stokList"></div>
             <div class="modal-actions">
@@ -221,31 +314,6 @@
             </div>
         </div>
     </div>
-
-    <style>
-        @keyframes scanMove { 0% { top:0; } 50% { top:100%; } 100% { top:0; } }
-
-        /* Print Nota Styles */
-        #printNotaFrame { display:none; }
-
-        @media print {
-            body > *:not(#printNotaFrame) { display: none !important; }
-            #printNotaFrame { display: block !important; }
-        }
-
-        /* Info payment badge */
-        .info-payment-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 10px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .pay-cash  { background: #dcfce7; color: #166534; }
-        .pay-qris  { background: #ede9fe; color: #5b21b6; }
-        .pay-other { background: #fef3c7; color: #92400e; }
-    </style>
-
-    <!-- Hidden print frame -->
-    <div id="printNotaFrame"></div>
 
     <script src="js/auth.js"></script>
     <script src="js/customDropdown.js"></script>
