@@ -606,3 +606,22 @@ tbody tr:not(.empty-row):hover {
     margin-bottom: 3px;
 }
 .info-val { font-size: 14px; color: #111827; }
+
+.btn-print-nota {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: rgb(16, 44, 168);
+    color: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    box-shadow: 3px 5px 0 0 black;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    font-family: "Poppins", sans-serif;
+}
+.btn-print-nota:hover { transform: scale(0.90); }
+.btn-print-nota i { font-size: 16px; }

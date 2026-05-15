@@ -577,6 +577,249 @@ document.getElementById("confirmOverlay").addEventListener("click", (e) => {
   }
 });
 
+// ============================================================
+// ===== PRINT NOTA ===========================================
+// ============================================================
+document.getElementById("btnPrintNota").addEventListener("click", printNota);
+
+function printNota() {
+    const data = getThisInvoice();
+    if (!data) return;
+
+    const items = data.items || [];
+    const totalItem = items.reduce((s, i) => s + (parseInt(i.jumlahKeluar) || 0), 0);
+    const totalHarga = items.reduce(
+        (s, i) => s + parseFloat(i.hargaJual || i.hargaHPP || 0) * (parseInt(i.jumlahKeluar) || 0),
+        0
+    );
+
+    const now = new Date();
+    const printTime = now.toLocaleString("id-ID", {
+        day: "numeric", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
+
+    // Baris item tabel
+    const itemRows = items.map((item, idx) => `
+        <tr>
+            <td style="padding:5px 8px;border-bottom:0.5px solid #ddd;">${idx + 1}</td>
+            <td style="padding:5px 8px;border-bottom:0.5px solid #ddd;">${item.nama}<br>
+                <span style="font-size:10px;color:#888;">${item.kategori || ""} · ${item.merk || ""}</span>
+            </td>
+            <td style="padding:5px 8px;border-bottom:0.5px solid #ddd;text-align:center;">${item.jumlahKeluar}</td>
+            <td style="padding:5px 8px;border-bottom:0.5px solid #ddd;text-align:right;">
+                Rp ${Number(item.hargaJual || item.hargaHPP || 0).toLocaleString("id-ID")}
+            </td>
+            <td style="padding:5px 8px;border-bottom:0.5px solid #ddd;text-align:right;font-weight:600;">
+                Rp ${(parseFloat(item.hargaJual || item.hargaHPP || 0) * parseInt(item.jumlahKeluar || 0)).toLocaleString("id-ID")}
+            </td>
+        </tr>
+    `).join("");
+
+    const emptyRows = items.length === 0
+        ? `<tr><td colspan="5" style="padding:16px;text-align:center;color:#aaa;font-style:italic;">Belum ada barang</td></tr>`
+        : "";
+
+    const payIcon = data.paymentId === "pay_default_cash" ? "💵"
+                  : data.paymentId === "pay_default_qris" ? "📱" : "💰";
+
+    const win = window.open("", "_blank", "width=420,height=640");
+    win.document.write(`
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Nota — ${data.invoice}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Poppins", "Segoe UI", sans-serif;
+    font-size: 12px;
+    background: #fff;
+    color: #111;
+    padding: 24px;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+  .header { text-align: center; margin-bottom: 16px; border-bottom: 2px dashed #111; padding-bottom: 12px; }
+  .header h1 { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+  .header p  { font-size: 11px; color: #555; margin-top: 3px; }
+  .invoice-no {
+    display: inline-block;
+    background: #f0f4ff;
+    color: rgb(16,44,168);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid #c0d0f0;
+    margin: 8px 0;
+    letter-spacing: 0.5px;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    margin: 12px 0 16px;
+    padding: 10px;
+    background: #f8f9fc;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+  .info-item { display: flex; flex-direction: column; gap: 1px; }
+  .info-label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-val   { font-size: 12px; font-weight: 600; color: #111; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  thead { background: #f0f4ff; }
+  th {
+    padding: 6px 8px; font-size: 11px; font-weight: 700;
+    border-bottom: 1.5px solid #111; text-align: left;
+  }
+  th:last-child, th:nth-child(3), th:nth-child(4) { text-align: right; }
+  th:nth-child(3) { text-align: center; }
+  .total-section {
+    border-top: 2px dashed #111;
+    padding-top: 10px;
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+  .total-row.grand {
+    font-size: 15px;
+    font-weight: 800;
+    color: rgb(16,44,168);
+    border-top: 1.5px solid #111;
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+  .payment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #d4f7e7;
+    color: #0a6640;
+    border: 1px solid #aaeacc;
+  }
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px dashed #ccc;
+    font-size: 10px;
+    color: #aaa;
+    line-height: 1.7;
+  }
+  .footer strong { color: #555; font-size: 11px; }
+  .print-btn {
+    display: block;
+    width: 100%;
+    margin: 16px 0 0;
+    padding: 10px;
+    background: rgb(16,44,168);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .print-btn:hover { opacity: 0.9; }
+  @media print {
+    .print-btn { display: none; }
+    body { padding: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>INVENZ</h1>
+  <p>Sistem Manajemen Inventori</p>
+  <div class="invoice-no">${data.invoice}</div>
+</div>
+
+<div class="info-grid">
+  <div class="info-item">
+    <span class="info-label">Tanggal</span>
+    <span class="info-val">${formatDate(data.tanggal)}</span>
+  </div>
+  <div class="info-item">
+    <span class="info-label">Customer</span>
+    <span class="info-val">${data.penerima || "—"}</span>
+  </div>
+  <div class="info-item">
+    <span class="info-label">No. Telepon</span>
+    <span class="info-val">${data.telepon || "—"}</span>
+  </div>
+  <div class="info-item">
+    <span class="info-label">Metode Bayar</span>
+    <span class="info-val">${payIcon} ${data.paymentNama || "—"}</span>
+  </div>
+  <div class="info-item">
+    <span class="info-label">Dicetak</span>
+    <span class="info-val" style="font-size:10px">${printTime}</span>
+  </div>
+  <div class="info-item">
+    <span class="info-label">Operator</span>
+    <span class="info-val">${localStorage.getItem("loggedUser") || "Admin"}</span>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:24px">#</th>
+      <th>Nama Barang</th>
+      <th style="width:36px;text-align:center">Qty</th>
+      <th style="text-align:right">Harga</th>
+      <th style="text-align:right">Subtotal</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${itemRows}
+    ${emptyRows}
+  </tbody>
+</table>
+
+<div class="total-section">
+  <div class="total-row">
+    <span style="color:#555">Total item</span>
+    <span style="font-weight:600">${totalItem} pcs</span>
+  </div>
+  <div class="total-row grand">
+    <span>TOTAL</span>
+    <span>Rp ${totalHarga.toLocaleString("id-ID")}</span>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>Terima kasih atas kepercayaan Anda!</strong><br>
+  Barang yang sudah dibeli tidak dapat dikembalikan<br>
+  kecuali ada perjanjian sebelumnya.<br><br>
+  Disimpan & dicetak via INVENZ
+</div>
+
+<button class="print-btn" onclick="window.print()">🖨️ Print Nota</button>
+
+</body>
+</html>
+    `);
+    win.document.close();
+}
+
+// ============================================================
 // ===== SAFETY NET =====
 window.addEventListener("beforeunload",     () => stopSKUScanner());
 window.addEventListener("pagehide",          () => stopSKUScanner());

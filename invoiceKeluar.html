@@ -27,8 +27,26 @@
             background: #111; color: white;
             display: flex; align-items: center; justify-content: space-between;
             padding: 10px 20px; font-size: 13px; font-weight: 500; z-index: 90;
+            gap: 12px; flex-wrap: wrap;
         }
         .total-bar strong { color: aqua; font-size: 15px; }
+
+        .total-bar-left  { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .total-bar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        /* ===== TOMBOL PRINT NOTA ===== */
+        .btn-print-nota {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 14px; font-size: 12px; font-weight: 700;
+            background: aqua; color: #111;
+            border: 1.5px solid #111; border-radius: 8px;
+            box-shadow: 3px 3px 0 0 rgba(255,255,255,0.3);
+            cursor: pointer; font-family: "Poppins", sans-serif;
+            transition: transform 0.1s, background 0.15s;
+            white-space: nowrap;
+        }
+        .btn-print-nota:hover { transform: scale(0.93); background: #00e5e5; }
+        .btn-print-nota i { font-size: 16px !important; }
 
         .col-harga-item { font-weight: 700; color: #1a6b2a; }
 
@@ -187,7 +205,12 @@
 
     <div class="nav-controll">
         <p>* klik "Stock Out Barang" untuk mengeluarkan barang dari stok</p>
-        <button class="tambah-btn" id="btnAddItem">+ Stock Out Barang</button>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn-print-nota" id="btnPrintNota">
+                <i class="bx bx-printer"></i> Print Nota
+            </button>
+            <button class="tambah-btn" id="btnAddItem">+ Stock Out Barang</button>
+        </div>
     </div>
 
     <div class="container">
@@ -215,10 +238,17 @@
         </table>
     </div>
 
-    <!-- Total bar bawah -->
+    <!-- Total bar bawah + Print Nota -->
     <div class="total-bar" id="totalBar">
-        <span>Total barang keluar: <strong id="summaryTotal">0</strong> item</span>
-        <span>Total nilai: <strong id="summaryHarga">Rp 0</strong></span>
+        <div class="total-bar-left">
+            <span>Total barang keluar: <strong id="summaryTotal">0</strong> item</span>
+            <span>Total nilai: <strong id="summaryHarga">Rp 0</strong></span>
+        </div>
+        <div class="total-bar-right">
+            <button class="btn-print-nota" id="btnPrintNota">
+                <i class="bx bx-printer"></i> Print Nota
+            </button>
+        </div>
     </div>
 
     <!-- ===== MODAL PILIH BARANG ===== -->
