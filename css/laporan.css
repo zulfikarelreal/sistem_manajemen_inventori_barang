@@ -431,3 +431,18 @@ i { font-size: 26px; cursor: pointer; }
     .export-group { margin-left: 0; }
     .kpi-value { font-size: 16px; }
 }
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
